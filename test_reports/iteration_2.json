@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 2 testing focused on the NEW search + category filtering feature after the neon redesign. Backend: 17/17 pytest tests pass — GET /api/categories returns sorted distinct list containing Instagram/TikTok/YouTube/Combos, GET /api/products returns 6 social seed products each with a valid 'category' field, admin POST /api/products accepts and persists 'category' (defaults to 'General' when omitted), and category disappears from /api/categories after product deletion. Auth (register/login/me/duplicate/invalid) and Wallet (topup, purchase 500 Likes Instagram $5, insufficient balance, transactions) all green. Frontend: search input filters by name & description (TikTok→2 cards, 'likes'→2 cards matching name+description), all category chips (Todos/Instagram/TikTok/YouTube/Combos) filter grid correctly, cards show category badge + $price. End-to-end purchase: registered new user → topup $25 (quick-25 + card + topup-submit-btn) → header balance $25.00 → bought 500 Likes Instagram → success toast '¡Compraste 500 Likes Instagram! Nuevo saldo: $20.00' → balance shows $20.00. Insufficient balance path shows 'Saldo insuficiente' toast with 'Cargar saldo' action. Admin panel: filled name/description/category='TestUICat'/price/image, submitted, product appears in list with 'Producto agregado' toast and is retrievable via GET /api/products with the exact category persisted.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin product list (right column)", "issues": ["Admin product rows do not surface the 'category' field visually — only name+price. Adding a small category badge here would help admins verify category assignment without going to /productos."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_inflow_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional UX) Show category badge in admin product list rows.",
+    "(Carryover from iter 1) CORS_ORIGINS='*' with allow_credentials=True is spec-invalid; app uses Bearer tokens so allow_credentials can be False, or set explicit origins.",
+    "(Carryover) put_object/get_object use blocking requests inside async handlers — consider httpx.AsyncClient / run_in_threadpool.",
+    "(Carryover) /api/files/{path} raises 500 on storage 404 — convert to 404."
+  ],
+  "critical_code_review_comments": [
+    "GET /api/categories relies on distinct() — fine, but categories in the DB are user-supplied free-text (no whitelist). Two admins entering 'instagram' vs 'Instagram' will produce duplicate categories. Consider server-side normalization (trim + Title Case) or a fixed enum.",
+    "Products.js builds category list from products response but always prepends 'Todos'; if backend seeds are missing the chips silently disappear. Consider fetching /api/categories directly so chips are consistent regardless of pagination.",
+    "Search is case-insensitive over name/description only; no debounce. For small lists this is fine, but if catalog grows a debounced client filter or server-side ?q= would scale better.",
+    "Purchase uses $inc without a transactional guard; a concurrent double-click could race the balance check. For MVP acceptable — consider conditional update {balance: {$gte: price}} with modified_count check.",
+    "Admin form 'category' input has no dropdown/autocomplete of existing categories — increases risk of typos and category fragmentation."
+  ],
+  "updated_files": ["/app/backend/tests/test_inflow_backend.py"],
+  "success_rate": { "backend": "100% (17/17)", "frontend": "100%" },
+  "test_credentials": "Admin: admin@inflowmkt.com / InflowAdmin2026 (verified). Test users registered dynamically with password Test1234.",
+  "seed_data_creation": "Backend seeds 6 social products on startup (1.000/500 Instagram, 5.000/10.000 TikTok, 1.000 YouTube, Pack Growth Pro Combos) — all present and un-deleted. TEST_-prefixed products created during tests are deleted at teardown.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Category chip testids are category-chip-<CategoryName> verbatim (e.g. category-chip-Instagram, category-chip-Todos, category-chip-TikTok, category-chip-YouTube, category-chip-Combos). Product search input: product-search-input. Product card testid: product-card-<id>; buy button buy-btn-<id>. Category badge on card is the .absolute.top-3.left-3 span. Cargar Saldo page uses quick-25/50/100/250, topup-amount-input, topup-submit-btn, method-card/qr/transfer. Admin form: admin-name-input, admin-category-input, admin-price-input, admin-image-input, admin-save-btn (description is a plain <textarea>). Auth: header-login-btn opens dialog defaulting to login; auth-toggle-mode switches to register (shows auth-name-input). Token stored in localStorage as 'inflow_token'. Backend base uses REACT_APP_BACKEND_URL from /app/frontend/.env.",
+  "rca of the issue": "N/A — all iteration-2 acceptance criteria pass."
+}

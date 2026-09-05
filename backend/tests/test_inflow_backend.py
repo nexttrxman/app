@@ -1,14 +1,23 @@
-"""Backend tests for INFLOW MKT marketplace."""
+"""Backend tests for INFLOW MKT marketplace (iteration 2 - social products + categories)."""
 import os
 import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://inflow-shop.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "admin@inflowmkt.com"
 ADMIN_PASSWORD = "InflowAdmin2026"
+
+EXPECTED_SEED = {
+    "1.000 Seguidores Instagram": "Instagram",
+    "500 Likes Instagram": "Instagram",
+    "5.000 Seguidores TikTok": "TikTok",
+    "10.000 Views TikTok": "TikTok",
+    "1.000 Suscriptores YouTube": "YouTube",
+    "Pack Growth Pro": "Combos",
+}
 
 
 @pytest.fixture(scope="module")
@@ -29,7 +38,6 @@ def user_token(user_creds):
     r = requests.post(f"{API}/auth/register", json=user_creds)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert "token" in body and "user" in body
     assert body["user"]["balance"] == 0
     assert body["user"]["role"] == "user"
     return body["token"]
@@ -39,22 +47,18 @@ def _h(tok):
     return {"Authorization": f"Bearer {tok}"}
 
 
-# ------------- Auth -------------
 class TestAuth:
-    def test_register_returns_token_and_balance_zero(self, user_token):
-        # user_token fixture asserts
+    def test_register(self, user_token):
         assert user_token
 
     def test_register_duplicate_fails(self, user_creds, user_token):
         r = requests.post(f"{API}/auth/register", json=user_creds)
         assert r.status_code == 400
 
-    def test_admin_login_and_me(self, admin_token):
+    def test_admin_me(self, admin_token):
         r = requests.get(f"{API}/auth/me", headers=_h(admin_token))
         assert r.status_code == 200
-        data = r.json()
-        assert data["role"] == "admin"
-        assert data["email"] == ADMIN_EMAIL
+        assert r.json()["role"] == "admin"
 
     def test_login_invalid(self):
         r = requests.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": "wrong"})
@@ -65,86 +69,122 @@ class TestAuth:
         assert r.status_code == 401
 
 
-# ------------- Products -------------
 class TestProducts:
-    def test_list_products_public(self):
+    def test_list_products_has_social_seed(self):
         r = requests.get(f"{API}/products")
         assert r.status_code == 200
         prods = r.json()
-        assert isinstance(prods, list)
-        assert len(prods) >= 3
-        names = [p["name"] for p in prods]
-        for expected in ["Neon Console X", "Pulse Mouse Pro", "Chrono Watch S"]:
-            assert expected in names
+        names = {p["name"]: p for p in prods}
+        for name, cat in EXPECTED_SEED.items():
+            assert name in names, f"Missing seed product: {name}"
+            assert names[name]["category"] == cat, f"Wrong category for {name}"
+            assert "price" in names[name] and isinstance(names[name]["price"], (int, float))
+
+    def test_products_have_category_field(self):
+        prods = requests.get(f"{API}/products").json()
+        for p in prods:
+            assert "category" in p and p["category"], f"Product {p['name']} missing category"
+
+    def test_categories_endpoint(self):
+        r = requests.get(f"{API}/categories")
+        assert r.status_code == 200
+        cats = r.json()
+        assert isinstance(cats, list)
+        for expected in ["Instagram", "TikTok", "YouTube", "Combos"]:
+            assert expected in cats, f"Missing category: {expected}"
+        # sorted
+        assert cats == sorted(cats)
 
     def test_non_admin_cannot_create(self, user_token):
         r = requests.post(f"{API}/products", headers=_h(user_token),
-                          json={"name": "X", "description": "d", "price": 1.0, "image_url": "http://x"})
+                          json={"name": "X", "description": "d", "price": 1.0, "image_url": "http://x", "category": "Instagram"})
         assert r.status_code == 403
 
-    def test_admin_create_and_delete(self, admin_token):
-        payload = {"name": f"TEST_Prod_{uuid.uuid4().hex[:6]}", "description": "test", "price": 12.5, "image_url": "http://x/y.jpg"}
+    def test_admin_create_with_category_persists(self, admin_token):
+        cat = "TEST_CategoryX"
+        payload = {
+            "name": f"TEST_Prod_{uuid.uuid4().hex[:6]}",
+            "description": "test",
+            "price": 12.5,
+            "image_url": "http://x/y.jpg",
+            "category": cat,
+        }
         r = requests.post(f"{API}/products", headers=_h(admin_token), json=payload)
         assert r.status_code == 200, r.text
-        pid = r.json()["id"]
-        # verify listed
-        r2 = requests.get(f"{API}/products")
-        assert any(p["id"] == pid for p in r2.json())
-        # delete
+        body = r.json()
+        pid = body["id"]
+        assert body["category"] == cat
+
+        # verify GET returns with category
+        prods = requests.get(f"{API}/products").json()
+        found = next((p for p in prods if p["id"] == pid), None)
+        assert found is not None
+        assert found["category"] == cat
+
+        # verify categories endpoint includes the new category
+        cats = requests.get(f"{API}/categories").json()
+        assert cat in cats
+
+        # cleanup
         r3 = requests.delete(f"{API}/products/{pid}", headers=_h(admin_token))
         assert r3.status_code == 200
-        r4 = requests.get(f"{API}/products")
-        assert not any(p["id"] == pid for p in r4.json())
+        # after delete, category should be gone from distinct list
+        cats_after = requests.get(f"{API}/categories").json()
+        assert cat not in cats_after
+
+    def test_admin_create_default_category(self, admin_token):
+        payload = {
+            "name": f"TEST_Default_{uuid.uuid4().hex[:6]}",
+            "description": "d",
+            "price": 1.0,
+            "image_url": "http://x",
+        }
+        r = requests.post(f"{API}/products", headers=_h(admin_token), json=payload)
+        assert r.status_code == 200
+        assert r.json()["category"] == "General"
+        requests.delete(f"{API}/products/{r.json()['id']}", headers=_h(admin_token))
 
     def test_non_admin_cannot_delete(self, user_token):
-        r = requests.get(f"{API}/products")
-        pid = r.json()[0]["id"]
-        r2 = requests.delete(f"{API}/products/{pid}", headers=_h(user_token))
-        assert r2.status_code == 403
+        pid = requests.get(f"{API}/products").json()[0]["id"]
+        r = requests.delete(f"{API}/products/{pid}", headers=_h(user_token))
+        assert r.status_code == 403
 
 
-# ------------- Wallet -------------
 class TestWallet:
-    def test_topup_increases_balance_and_records_tx(self, user_token):
-        r = requests.post(f"{API}/wallet/topup", headers=_h(user_token), json={"amount": 100, "method": "card"})
+    def test_topup_increases_balance(self, user_token):
+        r = requests.post(f"{API}/wallet/topup", headers=_h(user_token), json={"amount": 50, "method": "card"})
         assert r.status_code == 200
-        assert r.json()["balance"] >= 100
-        # tx list
-        r2 = requests.get(f"{API}/wallet/transactions", headers=_h(user_token))
-        assert r2.status_code == 200
-        txs = r2.json()
-        assert any(t["type"] == "topup" and t["amount"] == 100 for t in txs)
+        assert r.json()["balance"] >= 50
+        txs = requests.get(f"{API}/wallet/transactions", headers=_h(user_token)).json()
+        assert any(t["type"] == "topup" and t["amount"] == 50 for t in txs)
 
     def test_topup_zero_fails(self, user_token):
         r = requests.post(f"{API}/wallet/topup", headers=_h(user_token), json={"amount": 0})
         assert r.status_code == 400
 
     def test_purchase_insufficient(self, user_token):
-        # find expensive product
         prods = requests.get(f"{API}/products").json()
         expensive = max(prods, key=lambda p: p["price"])
-        # ensure balance is below its price by not topping enough - the user has 100 from prev test
-        # Neon Console X is 499
-        if expensive["price"] > 100:
+        me = requests.get(f"{API}/auth/me", headers=_h(user_token)).json()
+        if expensive["price"] > me["balance"]:
             r = requests.post(f"{API}/wallet/purchase/{expensive['id']}", headers=_h(user_token))
             assert r.status_code == 400
             assert "Saldo insuficiente" in r.json().get("detail", "")
 
-    def test_purchase_success_deducts_and_records(self, user_token):
+    def test_purchase_500_likes_success(self, user_token):
         prods = requests.get(f"{API}/products").json()
-        cheap = min(prods, key=lambda p: p["price"])
-        # ensure enough balance
+        target = next((p for p in prods if p["name"] == "500 Likes Instagram"), None)
+        assert target is not None
         me = requests.get(f"{API}/auth/me", headers=_h(user_token)).json()
-        if me["balance"] < cheap["price"]:
+        if me["balance"] < target["price"]:
             requests.post(f"{API}/wallet/topup", headers=_h(user_token),
-                          json={"amount": cheap["price"] + 10, "method": "card"})
+                          json={"amount": target["price"] + 10, "method": "card"})
         before = requests.get(f"{API}/auth/me", headers=_h(user_token)).json()["balance"]
-        r = requests.post(f"{API}/wallet/purchase/{cheap['id']}", headers=_h(user_token))
+        r = requests.post(f"{API}/wallet/purchase/{target['id']}", headers=_h(user_token))
         assert r.status_code == 200, r.text
-        assert r.json()["balance"] == round(before - cheap["price"], 2)
-        # tx present
+        assert r.json()["balance"] == round(before - target["price"], 2)
         txs = requests.get(f"{API}/wallet/transactions", headers=_h(user_token)).json()
-        assert any(t["type"] == "purchase" and t.get("product_name") == cheap["name"] for t in txs)
+        assert any(t["type"] == "purchase" and t.get("product_name") == target["name"] for t in txs)
 
     def test_transactions_requires_auth(self):
         r = requests.get(f"{API}/wallet/transactions")

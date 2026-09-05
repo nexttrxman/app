@@ -14,6 +14,7 @@ export default function Admin() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,9 +53,9 @@ export default function Admin() {
     }
     setSaving(true);
     try {
-      await api.post("/products", { name, description, price: parseFloat(price), image_url: imageUrl });
+      await api.post("/products", { name, description, price: parseFloat(price), image_url: imageUrl, category: category || "General" });
       toast.success("Producto agregado");
-      setName(""); setDescription(""); setPrice(""); setImageUrl("");
+      setName(""); setDescription(""); setPrice(""); setImageUrl(""); setCategory("");
       load();
     } catch (err) {
       toast.error(apiError(err.response?.data?.detail));
@@ -74,7 +75,7 @@ export default function Admin() {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-32"><Loader2 className="animate-spin text-[#00ff9d]" size={32} /></div>;
+    return <div className="flex justify-center py-32"><Loader2 className="animate-spin text-[#ff2ec4]" size={32} /></div>;
   }
 
   if (user?.role !== "admin") {
@@ -95,7 +96,7 @@ export default function Admin() {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Form */}
         <form onSubmit={save} className="rounded-2xl p-6 bg-[#0c0c12] border border-[#ff00ff]/25 space-y-4 h-fit" data-testid="admin-product-form">
-          <h2 className="font-display text-xl font-bold flex items-center gap-2"><Plus size={18} className="text-[#00ff9d]" /> Nuevo producto</h2>
+          <h2 className="font-display text-xl font-bold flex items-center gap-2"><Plus size={18} className="text-[#ff2ec4]" /> Nuevo producto</h2>
 
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-widest text-zinc-500">Imagen</Label>
@@ -108,7 +109,7 @@ export default function Admin() {
                 )}
               </div>
               <label className="cursor-pointer flex-1">
-                <div className="flex items-center justify-center gap-2 py-3 rounded-lg border border-dashed border-white/20 text-sm text-zinc-400 hover:border-[#00ff9d]/50 hover:text-white transition-colors">
+                <div className="flex items-center justify-center gap-2 py-3 rounded-lg border border-dashed border-white/20 text-sm text-zinc-400 hover:border-[#ff2ec4]/50 hover:text-white transition-colors">
                   {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
                   {uploading ? "Subiendo..." : "Subir imagen"}
                 </div>
@@ -119,17 +120,21 @@ export default function Admin() {
 
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-widest text-zinc-500">Nombre</Label>
-            <Input data-testid="admin-name-input" value={name} onChange={(e) => setName(e.target.value)} required className="bg-black/40 border-white/10 text-white focus-visible:ring-[#00ff9d]" />
+            <Input data-testid="admin-name-input" value={name} onChange={(e) => setName(e.target.value)} required className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-widest text-zinc-500">Descripción corta</Label>
-            <Textarea data-testid="admin-desc-input" value={description} onChange={(e) => setDescription(e.target.value)} required rows={2} className="bg-black/40 border-white/10 text-white focus-visible:ring-[#00ff9d] resize-none" />
+            <Textarea data-testid="admin-desc-input" value={description} onChange={(e) => setDescription(e.target.value)} required rows={2} className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4] resize-none" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-widest text-zinc-500">Categoría</Label>
+            <Input data-testid="admin-category-input" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ej: Instagram, TikTok, YouTube" className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-widest text-zinc-500">Precio ($)</Label>
-            <Input data-testid="admin-price-input" type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} required className="bg-black/40 border-white/10 text-white focus-visible:ring-[#00ff9d]" />
+            <Input data-testid="admin-price-input" type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} required className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]" />
           </div>
-          <Button data-testid="admin-save-btn" type="submit" disabled={saving} className="w-full bg-[#00ff9d] hover:bg-[#00ff9d] text-black font-bold rounded-full h-11 glow-green">
+          <Button data-testid="admin-save-btn" type="submit" disabled={saving} className="w-full bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full h-11 glow-pink">
             {saving ? <Loader2 className="animate-spin" size={18} /> : "Agregar producto"}
           </Button>
         </form>

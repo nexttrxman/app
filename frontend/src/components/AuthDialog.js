@@ -40,12 +40,12 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="bg-[#0c0c12] border border-[#00ff9d]/30 text-white sm:max-w-md glow-green"
+        className="bg-[#0c0c12] border border-[#ff2ec4]/30 text-white sm:max-w-md glow-pink"
         data-testid="auth-dialog"
       >
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-black tracking-tight flex items-center gap-2">
-            <Zap className="text-[#00ff9d]" size={22} />
+            <Zap className="text-[#ff2ec4]" size={22} />
             {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm">
@@ -61,7 +61,7 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="bg-black/40 border-white/10 text-white focus-visible:ring-[#00ff9d]"
+                className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]"
                 placeholder="Tu nombre"
               />
             </div>
@@ -74,7 +74,7 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-black/40 border-white/10 text-white focus-visible:ring-[#00ff9d]"
+              className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]"
               placeholder="tu@email.com"
             />
           </div>
@@ -86,7 +86,7 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-black/40 border-white/10 text-white focus-visible:ring-[#00ff9d]"
+              className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]"
               placeholder="••••••••"
             />
           </div>
@@ -94,7 +94,7 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
             data-testid="auth-submit-btn"
             type="submit"
             disabled={busy}
-            className="w-full bg-[#00ff9d] hover:bg-[#00ff9d] text-black font-bold rounded-full h-11 hover:scale-[1.02] transition-transform glow-green"
+            className="w-full bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full h-11 hover:scale-[1.02] transition-transform glow-pink"
           >
             {busy ? <Loader2 className="animate-spin" size={18} /> : mode === "login" ? "Entrar" : "Registrarme"}
           </Button>

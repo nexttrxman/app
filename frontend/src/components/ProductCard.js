@@ -18,7 +18,7 @@ export default function ProductCard({ product, onBuy, index = 0 }) {
   return (
     <div
       data-testid={`product-card-${product.id}`}
-      className="group rounded-xl overflow-hidden bg-[#12121a] border border-white/10 hover:border-[#00ff9d]/60 hover:-translate-y-1 transition-all duration-300 flex flex-col fade-up"
+      className="group rounded-xl overflow-hidden bg-[#12121a] border border-white/10 hover:border-[#ff2ec4]/60 hover:-translate-y-1 transition-all duration-300 flex flex-col fade-up"
       style={{ animationDelay: `${index * 60}ms` }}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-black">
@@ -30,6 +30,11 @@ export default function ProductCard({ product, onBuy, index = 0 }) {
         <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur border border-[#00e5ff]/40">
           <span className="font-display font-bold text-[#00e5ff] text-sm">${product.price.toFixed(2)}</span>
         </div>
+        {product.category && (
+          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur border border-[#b026ff]/50">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-[#b026ff]">{product.category}</span>
+          </div>
+        )}
       </div>
       <div className="p-5 flex flex-col flex-1">
         <h3 className="font-display font-bold text-lg text-white">{product.name}</h3>
@@ -38,7 +43,7 @@ export default function ProductCard({ product, onBuy, index = 0 }) {
           data-testid={`buy-btn-${product.id}`}
           onClick={handle}
           disabled={busy}
-          className="mt-4 w-full bg-[#00ff9d] hover:bg-[#00ff9d] text-black font-bold rounded-full hover:scale-[1.03] transition-transform group-hover:glow-green"
+          className="mt-4 w-full bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full hover:scale-[1.03] transition-transform group-hover:glow-pink"
         >
           {busy ? <Loader2 className="animate-spin" size={18} /> : <><ShoppingCart size={16} className="mr-2" /> Comprar</>}
         </Button>

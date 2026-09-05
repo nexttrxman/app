@@ -27,7 +27,7 @@ export default function Header() {
         <Link to="/" data-testid="logo-link" className="flex items-center gap-3 shrink-0">
           <img src={LOGO} alt="INFLOW" className="h-10 w-10 rounded-full object-cover border border-[#ff00ff]/50 glow-magenta" />
           <span className="font-display text-xl font-black tracking-tight">
-            INFLOW <span className="text-[#00ff9d] text-glow-green">MKT</span>
+            INFLOW <span className="text-[#ff2ec4] text-glow-pink">MKT</span>
           </span>
         </Link>
 
@@ -38,7 +38,7 @@ export default function Header() {
               to={item.to}
               data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
               className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                location.pathname === item.to ? "text-[#00ff9d] text-glow-green" : "text-zinc-400 hover:text-white"
+                location.pathname === item.to ? "text-[#ff2ec4] text-glow-pink" : "text-zinc-400 hover:text-white"
               }`}
             >
               {item.label}
@@ -80,7 +80,7 @@ export default function Header() {
             <Button
               data-testid="header-login-btn"
               onClick={() => setAuthOpen(true)}
-              className="bg-[#00ff9d] hover:bg-[#00ff9d] text-black font-bold rounded-full px-5 hover:scale-105 transition-transform glow-green"
+              className="bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full px-5 hover:scale-105 transition-transform glow-pink"
             >
               Entrar
             </Button>

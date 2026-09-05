@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-5 py-12 grid gap-8 md:grid-cols-3">
         <div>
           <div className="font-display text-xl font-black tracking-tight flex items-center gap-2">
-            <Zap size={18} className="text-[#00ff9d]" /> INFLOW <span className="text-[#00ff9d]">MKT</span>
+            <Zap size={18} className="text-[#ff2ec4]" /> INFLOW <span className="text-[#ff2ec4]">MKT</span>
           </div>
           <p className="text-sm text-zinc-500 mt-3 max-w-xs">
             Compra fácil, saldo al instante. El marketplace futurista con billetera interna.

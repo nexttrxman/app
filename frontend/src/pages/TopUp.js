@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { CreditCard, QrCode, Landmark, Wallet, Loader2, Lock, Check } from "lucide-react";
 
 const methods = [
-  { id: "card", label: "Tarjeta", icon: CreditCard, color: "#00ff9d" },
+  { id: "card", label: "Tarjeta", icon: CreditCard, color: "#ff2ec4" },
   { id: "qr", label: "QR", icon: QrCode, color: "#00e5ff" },
   { id: "transfer", label: "Transferencia", icon: Landmark, color: "#ff00ff" },
 ];
@@ -49,7 +49,7 @@ export default function TopUp() {
         <Lock size={40} className="mx-auto text-[#ff00ff] mb-4" />
         <h1 className="font-display text-2xl font-black mb-2">Inicia sesión</h1>
         <p className="text-zinc-400 mb-6">Necesitas una cuenta para cargar saldo.</p>
-        <Button onClick={() => setAuthOpen(true)} className="bg-[#00ff9d] hover:bg-[#00ff9d] text-black font-bold rounded-full px-6 glow-green">
+        <Button onClick={() => setAuthOpen(true)} className="bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full px-6 glow-pink">
           Entrar
         </Button>
         <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
@@ -62,8 +62,8 @@ export default function TopUp() {
       <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#00e5ff]">Billetera</span>
       <h1 className="font-display text-4xl font-black tracking-tight mt-2 mb-2">Cargar saldo</h1>
       <p className="text-zinc-400 mb-8 flex items-center gap-2">
-        <Wallet size={16} className="text-[#00ff9d]" /> Saldo actual:{" "}
-        <span className="text-[#00ff9d] font-bold">${user.balance?.toFixed(2)}</span>
+        <Wallet size={16} className="text-[#ff2ec4]" /> Saldo actual:{" "}
+        <span className="text-[#ff2ec4] font-bold">${user.balance?.toFixed(2)}</span>
       </p>
 
       <div className="rounded-2xl p-6 sm:p-8 bg-[#0c0c12] border border-white/10">
@@ -99,7 +99,7 @@ export default function TopUp() {
               onClick={() => setAmount(String(q))}
               className={`py-2.5 rounded-lg border font-display font-bold transition-all ${
                 amount === String(q)
-                  ? "border-[#00ff9d] text-[#00ff9d] bg-[#00ff9d]/10"
+                  ? "border-[#ff2ec4] text-[#ff2ec4] bg-[#ff2ec4]/10"
                   : "border-white/10 text-zinc-300 hover:border-white/30"
               }`}
             >
@@ -117,7 +117,7 @@ export default function TopUp() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Otro monto"
-            className="bg-black/40 border-white/10 text-white h-12 pl-8 text-lg font-display focus-visible:ring-[#00ff9d]"
+            className="bg-black/40 border-white/10 text-white h-12 pl-8 text-lg font-display focus-visible:ring-[#ff2ec4]"
           />
         </div>
 
@@ -125,7 +125,7 @@ export default function TopUp() {
           data-testid="topup-submit-btn"
           onClick={submit}
           disabled={busy}
-          className="w-full h-12 bg-[#00ff9d] hover:bg-[#00ff9d] text-black font-bold rounded-full text-base hover:scale-[1.02] transition-transform glow-green"
+          className="w-full h-12 bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full text-base hover:scale-[1.02] transition-transform glow-pink"
         >
           {busy ? <Loader2 className="animate-spin" size={18} /> : "Cargar saldo (simulado)"}
         </Button>

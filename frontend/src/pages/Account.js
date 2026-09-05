@@ -30,7 +30,7 @@ export default function Account() {
   if (loading) {
     return (
       <div className="flex justify-center py-32">
-        <Loader2 className="animate-spin text-[#00ff9d]" size={32} />
+        <Loader2 className="animate-spin text-[#ff2ec4]" size={32} />
       </div>
     );
   }
@@ -44,7 +44,7 @@ export default function Account() {
         <Button
           data-testid="account-login-btn"
           onClick={() => setAuthOpen(true)}
-          className="bg-[#00ff9d] hover:bg-[#00ff9d] text-black font-bold rounded-full px-6 glow-green"
+          className="bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full px-6 glow-pink"
         >
           Entrar
         </Button>
@@ -59,14 +59,14 @@ export default function Account() {
       <h1 className="font-display text-4xl font-black tracking-tight mt-2 mb-8">Hola, {user.name} 👋</h1>
 
       {/* Balance card */}
-      <div className="relative overflow-hidden rounded-2xl p-8 bg-[#0c0c12] border border-[#00ff9d]/30 glow-green mb-10">
+      <div className="relative overflow-hidden rounded-2xl p-8 bg-[#0c0c12] border border-[#ff2ec4]/30 glow-pink mb-10">
         <div className="absolute inset-0 radial-cyan opacity-40" />
         <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 text-zinc-400 text-sm uppercase tracking-widest">
               <Wallet size={16} /> Saldo disponible
             </div>
-            <div className="font-display text-6xl font-black text-[#00ff9d] text-glow-green mt-3" data-testid="account-balance">
+            <div className="font-display text-6xl font-black text-[#ff2ec4] text-glow-pink mt-3" data-testid="account-balance">
               ${user.balance?.toFixed(2)}
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function Account() {
 
       {txLoading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-[#00ff9d]" size={28} />
+          <Loader2 className="animate-spin text-[#ff2ec4]" size={28} />
         </div>
       ) : txs.length === 0 ? (
         <p className="text-zinc-500 py-10 text-center">Todavía no tienes movimientos.</p>
@@ -109,7 +109,7 @@ export default function Account() {
                   {isPurchase ? (
                     <ArrowUpRight size={20} className="text-[#ff00ff]" />
                   ) : (
-                    <ArrowDownRight size={20} className="text-[#00ff9d]" />
+                    <ArrowDownRight size={20} className="text-[#ff2ec4]" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -120,7 +120,7 @@ export default function Account() {
                 </div>
                 <div
                   className="font-display font-bold text-lg shrink-0"
-                  style={{ color: isPurchase ? "#ff00ff" : "#00ff9d" }}
+                  style={{ color: isPurchase ? "#ff00ff" : "#ff2ec4" }}
                 >
                   {isPurchase ? "-" : "+"}${Math.abs(t.amount).toFixed(2)}
                 </div>

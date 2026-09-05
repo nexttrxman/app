@@ -2,19 +2,19 @@ import Marquee from "react-fast-marquee";
 import { Quote } from "lucide-react";
 
 const testimonials = [
-  { name: "Valentina Ríos", city: "Buenos Aires, AR", text: "Cargué saldo y compré en segundos. Nunca fue tan rápido.", color: "#00ff9d" },
+  { name: "Valentina Ríos", city: "Buenos Aires, AR", text: "Cargué saldo y compré en segundos. Nunca fue tan rápido.", color: "#ff2ec4" },
   { name: "Mateo Fernández", city: "Madrid, ES", text: "La interfaz es preciosa y súper intuitiva. Todo en dos clics.", color: "#00e5ff" },
   { name: "Camila Torres", city: "Bogotá, CO", text: "Me encanta ver mi saldo al instante. Confianza total.", color: "#ff00ff" },
-  { name: "Diego Morales", city: "Lima, PE", text: "Compré tres productos sin complicaciones. Excelente.", color: "#2962ff" },
-  { name: "Lucía Sánchez", city: "CDMX, MX", text: "El diseño neón es brutal y la compra fue inmediata.", color: "#00ff9d" },
+  { name: "Diego Morales", city: "Lima, PE", text: "Compré tres productos sin complicaciones. Excelente.", color: "#b026ff" },
+  { name: "Lucía Sánchez", city: "CDMX, MX", text: "El diseño neón es brutal y la compra fue inmediata.", color: "#ff2ec4" },
   { name: "Sebastián Rojas", city: "Santiago, CL", text: "Cargar saldo por QR fue facilísimo. Recomendado.", color: "#00e5ff" },
   { name: "Antonella Bruno", city: "Montevideo, UY", text: "Rápido, moderno y confiable. Mi tienda favorita.", color: "#ff00ff" },
-  { name: "Joaquín Vega", city: "Córdoba, AR", text: "El descuento del saldo es automático, me ahorra tiempo.", color: "#2962ff" },
-  { name: "Isabella Cruz", city: "Quito, EC", text: "Interfaz limpia, sin ruido. Comprar es un placer.", color: "#00ff9d" },
+  { name: "Joaquín Vega", city: "Córdoba, AR", text: "El descuento del saldo es automático, me ahorra tiempo.", color: "#b026ff" },
+  { name: "Isabella Cruz", city: "Quito, EC", text: "Interfaz limpia, sin ruido. Comprar es un placer.", color: "#ff2ec4" },
   { name: "Tomás Herrera", city: "Guadalajara, MX", text: "Todo funciona perfecto desde el móvil. Impecable.", color: "#00e5ff" },
   { name: "Martina López", city: "Rosario, AR", text: "Cargué saldo una vez y ya compré cinco veces. Genial.", color: "#ff00ff" },
-  { name: "Emilia Castro", city: "Valparaíso, CL", text: "El sistema de saldo interno es súper cómodo.", color: "#2962ff" },
-  { name: "Benjamín Díaz", city: "Asunción, PY", text: "Rapidísimo y con un estilo futurista increíble.", color: "#00ff9d" },
+  { name: "Emilia Castro", city: "Valparaíso, CL", text: "El sistema de saldo interno es súper cómodo.", color: "#b026ff" },
+  { name: "Benjamín Díaz", city: "Asunción, PY", text: "Rapidísimo y con un estilo futurista increíble.", color: "#ff2ec4" },
   { name: "Renata Gómez", city: "Barcelona, ES", text: "Confiable y elegante. Mis compras llegan sin líos.", color: "#00e5ff" },
   { name: "Facundo Peña", city: "Mendoza, AR", text: "La mejor experiencia de compra que probé este año.", color: "#ff00ff" },
 ];

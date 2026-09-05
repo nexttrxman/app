@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AuthDialog from "@/components/AuthDialog";
 import { toast } from "sonner";
-import { CreditCard, QrCode, Landmark, Wallet, Loader2, Lock, Check, ShieldCheck } from "lucide-react";
+import { CreditCard, QrCode, Landmark, Wallet, Loader2, Lock, Check, ShieldCheck, TicketPercent, X } from "lucide-react";
 
 const methods = [
   { id: "card", label: "Tarjeta", icon: CreditCard, color: "#ff3dbe" },
@@ -22,6 +22,24 @@ export default function TopUp() {
   const [method, setMethod] = useState("card");
   const [busy, setBusy] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [coupon, setCoupon] = useState(null);
+  const [checking, setChecking] = useState(false);
+
+  const applyCoupon = async () => {
+    if (!code.trim()) return;
+    setChecking(true);
+    try {
+      const { data } = await api.get("/coupons/validate", { params: { code: code.trim(), scope: "topup" } });
+      setCoupon(data);
+      toast.success(`Cupón ${data.code} aplicado (+${data.percent}% de saldo extra)`);
+    } catch (err) {
+      setCoupon(null);
+      toast.error(apiError(err.response?.data?.detail));
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const submit = async () => {
     const val = parseFloat(amount);
@@ -31,10 +49,20 @@ export default function TopUp() {
     }
     setBusy(true);
     try {
-      const { data } = await api.post("/wallet/topup", { amount: val, method });
+      const { data } = await api.post("/wallet/topup", {
+        amount: val,
+        method,
+        coupon_code: coupon ? coupon.code : null,
+      });
       setBalance(data.balance);
-      toast.success("¡Saldo cargado!", { description: `Nuevo saldo: $${data.balance.toFixed(2)}` });
+      toast.success("¡Saldo cargado!", {
+        description: data.bonus
+          ? `Bono de $${data.bonus.toFixed(2)} incluido · nuevo saldo: $${data.balance.toFixed(2)}`
+          : `Nuevo saldo: $${data.balance.toFixed(2)}`,
+      });
       setAmount("");
+      setCoupon(null);
+      setCode("");
       setTimeout(() => navigate("/mi-cuenta"), 700);
     } catch (err) {
       toast.error(apiError(err.response?.data?.detail));
@@ -129,6 +157,61 @@ export default function TopUp() {
               className="h-12 pl-10 rounded-xl bg-[#0b0617] border-white/10 text-white font-display text-base placeholder:text-[#6f6690] placeholder:font-sans focus-visible:ring-1 focus-visible:ring-[#ff3dbe] focus-visible:border-[#ff3dbe]/60"
             />
           </div>
+
+          <label className="eyebrow text-[#6f6690] flex items-center gap-1.5">
+            <TicketPercent size={13} /> Cupón (opcional)
+          </label>
+          <div className="flex gap-2 mt-3 mb-7">
+            <Input
+              data-testid="topup-coupon-input"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="EJ: BIENVENIDA10"
+              disabled={!!coupon}
+              className="h-12 rounded-xl bg-[#0b0617] border-white/10 text-white placeholder:text-[#6f6690] focus-visible:ring-1 focus-visible:ring-[#ff3dbe] focus-visible:border-[#ff3dbe]/60"
+            />
+            {coupon ? (
+              <Button
+                data-testid="topup-coupon-remove-btn"
+                onClick={() => { setCoupon(null); setCode(""); }}
+                variant="outline"
+                className="h-12 px-4 rounded-xl bg-transparent border-white/15 text-white hover:bg-white/5 hover:text-white"
+              >
+                <X size={16} />
+              </Button>
+            ) : (
+              <Button
+                data-testid="topup-coupon-apply-btn"
+                onClick={applyCoupon}
+                disabled={checking}
+                variant="outline"
+                className="h-12 px-5 rounded-xl bg-transparent border-[#2ee6ff]/40 text-[#2ee6ff] hover:bg-[#2ee6ff]/10 hover:text-[#2ee6ff]"
+              >
+                {checking ? <Loader2 className="animate-spin" size={16} /> : "Aplicar"}
+              </Button>
+            )}
+          </div>
+
+          {coupon && amount > 0 && (
+            <div className="panel rounded-2xl p-5 mb-7 space-y-2" data-testid="topup-bonus-summary">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#a49cbd]">Cargas</span>
+                <span className="text-white">${parseFloat(amount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#a49cbd]">Bono {coupon.code} (+{coupon.percent}%)</span>
+                <span className="text-[#2ee6ff]">
+                  +${((parseFloat(amount || 0) * coupon.percent) / 100).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-end pt-2.5 border-t border-white/[0.07]">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6f6690]">Recibes</span>
+                <span className="font-display text-xl font-extrabold text-white">
+                  ${(parseFloat(amount || 0) * (1 + coupon.percent / 100)).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          )}
 
           <Button
             data-testid="topup-submit-btn"

@@ -134,7 +134,36 @@ def serialize_user(user: dict) -> dict:
         "name": user.get("name", ""),
         "role": user.get("role", "user"),
         "balance": round(user.get("balance", 0.0), 2),
+        "referral_code": user.get("referral_code", ""),
     }
+
+
+# ---------------- Referrals & coupons config ----------------
+REFERRAL_WELCOME_BONUS = 5.0
+REFERRAL_COMMISSION_PERCENT = 10.0
+SCOPE_LABELS = {"purchase": "compras", "topup": "cargas de saldo", "both": "compras y cargas"}
+
+
+def build_referral_code(name: str, email: str) -> str:
+    base = "".join(ch for ch in (name or email.split("@")[0]) if ch.isalnum()).upper()[:6] or "INFLOW"
+    return f"{base}{uuid.uuid4().hex[:4].upper()}"
+
+
+async def get_valid_coupon(code: str, scope: str, user_id: str) -> dict:
+    code = (code or "").strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Ingresa un código de cupón")
+    coupon = await db.coupons.find_one({"code": code, "active": True})
+    if not coupon:
+        raise HTTPException(status_code=400, detail="Cupón inválido o inactivo")
+    if coupon.get("scope", "both") not in (scope, "both"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Este cupón solo aplica a {SCOPE_LABELS.get(coupon.get('scope', 'both'))}",
+        )
+    if await db.coupon_redemptions.find_one({"code": code, "user_id": user_id}):
+        raise HTTPException(status_code=400, detail="Ya usaste este cupón")
+    return coupon
 
 
 # ---------------- Models ----------------
@@ -142,6 +171,7 @@ class RegisterInput(BaseModel):
     name: str
     email: EmailStr
     password: str
+    referral_code: Optional[str] = None
 
 
 class LoginInput(BaseModel):
@@ -160,6 +190,21 @@ class ProductInput(BaseModel):
 class TopUpInput(BaseModel):
     amount: float
     method: str = "card"
+    coupon_code: Optional[str] = None
+
+
+class PurchaseInput(BaseModel):
+    coupon_code: Optional[str] = None
+
+
+class CouponInput(BaseModel):
+    code: str
+    percent: float
+    scope: str = "both"  # purchase | topup | both
+
+
+class CouponToggleInput(BaseModel):
+    active: bool
 
 
 # ---------------- Auth routes ----------------
@@ -168,16 +213,38 @@ async def register(data: RegisterInput):
     email = data.email.lower()
     if await db.users.find_one({"email": email}):
         raise HTTPException(status_code=400, detail="Este email ya está registrado")
+    referrer = None
+    if data.referral_code:
+        referrer = await db.users.find_one({"referral_code": data.referral_code.strip().upper()})
     doc = {
         "name": data.name,
         "email": email,
         "password_hash": hash_password(data.password),
         "role": "user",
-        "balance": 0.0,
+        "balance": REFERRAL_WELCOME_BONUS if referrer else 0.0,
+        "referral_code": build_referral_code(data.name, email),
+        "referred_by": str(referrer["_id"]) if referrer else None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     result = await db.users.insert_one(doc)
     doc["_id"] = result.inserted_id
+    if referrer:
+        now = datetime.now(timezone.utc).isoformat()
+        await db.transactions.insert_one({
+            "user_id": str(result.inserted_id),
+            "type": "bonus",
+            "amount": REFERRAL_WELCOME_BONUS,
+            "description": f"Bono de bienvenida por invitación de {referrer.get('name', '')}",
+            "created_at": now,
+        })
+        await db.referral_events.insert_one({
+            "referrer_id": str(referrer["_id"]),
+            "referred_id": str(result.inserted_id),
+            "referred_name": data.name,
+            "type": "signup",
+            "amount": 0.0,
+            "created_at": now,
+        })
     token = create_access_token(str(result.inserted_id), email)
     return {"token": token, "user": serialize_user(doc)}
 
@@ -270,41 +337,107 @@ async def download(path: str):
 async def topup(data: TopUpInput, user: dict = Depends(get_current_user)):
     if data.amount <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0")
+    amount = float(data.amount)
+    coupon = None
+    bonus = 0.0
+    if data.coupon_code:
+        coupon = await get_valid_coupon(data.coupon_code, "topup", user["_id"])
+        bonus = round(amount * coupon["percent"] / 100, 2)
     uid = ObjectId(user["_id"])
-    await db.users.update_one({"_id": uid}, {"$inc": {"balance": float(data.amount)}})
+    now = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one({"_id": uid}, {"$inc": {"balance": amount + bonus}})
     await db.transactions.insert_one({
         "user_id": user["_id"],
         "type": "topup",
-        "amount": float(data.amount),
+        "amount": amount,
         "method": data.method,
         "description": f"Carga de saldo ({data.method})",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now,
     })
+    if coupon:
+        await db.transactions.insert_one({
+            "user_id": user["_id"],
+            "type": "bonus",
+            "amount": bonus,
+            "description": f"Bono cupón {coupon['code']} (+{coupon['percent']:g}%)",
+            "created_at": now,
+        })
+        await db.coupon_redemptions.insert_one({
+            "code": coupon["code"],
+            "user_id": user["_id"],
+            "type": "topup",
+            "amount_saved": bonus,
+            "created_at": now,
+        })
     updated = await db.users.find_one({"_id": uid})
-    return {"balance": round(updated["balance"], 2)}
+    return {"balance": round(updated["balance"], 2), "bonus": bonus}
 
 
 @api_router.post("/wallet/purchase/{product_id}")
-async def purchase(product_id: str, user: dict = Depends(get_current_user)):
+async def purchase(product_id: str, data: Optional[PurchaseInput] = None, user: dict = Depends(get_current_user)):
     product = await db.products.find_one({"_id": ObjectId(product_id), "is_deleted": {"$ne": True}})
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
+    price = float(product["price"])
+    coupon = None
+    discount = 0.0
+    if data and data.coupon_code:
+        coupon = await get_valid_coupon(data.coupon_code, "purchase", user["_id"])
+        discount = round(price * coupon["percent"] / 100, 2)
+    total = round(price - discount, 2)
     uid = ObjectId(user["_id"])
     current = await db.users.find_one({"_id": uid})
-    if current["balance"] < product["price"]:
+    if current["balance"] < total:
         raise HTTPException(status_code=400, detail="Saldo insuficiente. Carga saldo para completar tu compra.")
-    await db.users.update_one({"_id": uid}, {"$inc": {"balance": -float(product["price"])}})
+    now = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one({"_id": uid}, {"$inc": {"balance": -total}})
     await db.transactions.insert_one({
         "user_id": user["_id"],
         "type": "purchase",
-        "amount": -float(product["price"]),
+        "amount": -total,
         "product_name": product["name"],
         "product_image": product["image_url"],
-        "description": f"Compra: {product['name']}",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "description": f"Compra: {product['name']}" + (f" · cupón {coupon['code']} -{coupon['percent']:g}%" if coupon else ""),
+        "created_at": now,
     })
+    if coupon:
+        await db.coupon_redemptions.insert_one({
+            "code": coupon["code"],
+            "user_id": user["_id"],
+            "type": "purchase",
+            "amount_saved": discount,
+            "created_at": now,
+        })
+
+    # referral commission for the inviter
+    referrer_id = current.get("referred_by")
+    commission = round(total * REFERRAL_COMMISSION_PERCENT / 100, 2) if referrer_id else 0.0
+    if referrer_id and commission > 0 and ObjectId.is_valid(referrer_id) and referrer_id != user["_id"]:
+        await db.users.update_one({"_id": ObjectId(referrer_id)}, {"$inc": {"balance": commission}})
+        await db.transactions.insert_one({
+            "user_id": referrer_id,
+            "type": "referral",
+            "amount": commission,
+            "description": f"Comisión por referido: {current.get('name', '')}",
+            "created_at": now,
+        })
+        await db.referral_events.insert_one({
+            "referrer_id": referrer_id,
+            "referred_id": user["_id"],
+            "referred_name": current.get("name", ""),
+            "type": "commission",
+            "amount": commission,
+            "created_at": now,
+        })
+
     updated = await db.users.find_one({"_id": uid})
-    return {"balance": round(updated["balance"], 2), "product": product["name"]}
+    return {
+        "balance": round(updated["balance"], 2),
+        "product": product["name"],
+        "price": price,
+        "discount": discount,
+        "total": total,
+    }
 
 
 @api_router.get("/wallet/transactions")
@@ -319,6 +452,94 @@ async def transactions(user: dict = Depends(get_current_user)):
         "product_image": t.get("product_image"),
         "created_at": t["created_at"],
     } for t in txs]
+
+
+# ---------------- Coupons ----------------
+@api_router.get("/coupons/validate")
+async def validate_coupon(code: str, scope: str = "purchase", user: dict = Depends(get_current_user)):
+    if scope not in SCOPE_LABELS:
+        raise HTTPException(status_code=400, detail="Alcance inválido")
+    coupon = await get_valid_coupon(code, scope, user["_id"])
+    return {"code": coupon["code"], "percent": coupon["percent"], "scope": coupon.get("scope", "both")}
+
+
+@api_router.get("/admin/coupons")
+async def list_coupons(admin: dict = Depends(require_admin)):
+    coupons = await db.coupons.find().sort("created_at", -1).to_list(500)
+    out = []
+    for c in coupons:
+        uses = await db.coupon_redemptions.count_documents({"code": c["code"]})
+        out.append({
+            "id": str(c["_id"]),
+            "code": c["code"],
+            "percent": c["percent"],
+            "scope": c.get("scope", "both"),
+            "active": c.get("active", True),
+            "uses": uses,
+        })
+    return out
+
+
+@api_router.post("/admin/coupons")
+async def create_coupon(data: CouponInput, admin: dict = Depends(require_admin)):
+    code = data.code.strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="El código no puede estar vacío")
+    if not 1 <= data.percent <= 100:
+        raise HTTPException(status_code=400, detail="El porcentaje debe estar entre 1 y 100")
+    if data.scope not in SCOPE_LABELS:
+        raise HTTPException(status_code=400, detail="Alcance inválido")
+    if await db.coupons.find_one({"code": code}):
+        raise HTTPException(status_code=400, detail="Ese código ya existe")
+    doc = {
+        "code": code,
+        "percent": float(data.percent),
+        "scope": data.scope,
+        "active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    result = await db.coupons.insert_one(doc)
+    return {"id": str(result.inserted_id), "code": code, "percent": doc["percent"], "scope": data.scope, "active": True, "uses": 0}
+
+
+@api_router.patch("/admin/coupons/{coupon_id}")
+async def toggle_coupon(coupon_id: str, data: CouponToggleInput, admin: dict = Depends(require_admin)):
+    await db.coupons.update_one({"_id": ObjectId(coupon_id)}, {"$set": {"active": data.active}})
+    return {"success": True, "active": data.active}
+
+
+@api_router.delete("/admin/coupons/{coupon_id}")
+async def delete_coupon(coupon_id: str, admin: dict = Depends(require_admin)):
+    await db.coupons.delete_one({"_id": ObjectId(coupon_id)})
+    return {"success": True}
+
+
+# ---------------- Referrals ----------------
+@api_router.get("/referrals/me")
+async def my_referrals(user: dict = Depends(get_current_user)):
+    full = await db.users.find_one({"_id": ObjectId(user["_id"])})
+    code = full.get("referral_code")
+    if not code:
+        code = build_referral_code(full.get("name", ""), full["email"])
+        await db.users.update_one({"_id": full["_id"]}, {"$set": {"referral_code": code}})
+    referred = await db.users.find({"referred_by": user["_id"]}).sort("created_at", -1).to_list(500)
+    events = await db.referral_events.find({"referrer_id": user["_id"], "type": "commission"}).to_list(2000)
+    earned_by_user = {}
+    for e in events:
+        earned_by_user[e["referred_id"]] = earned_by_user.get(e["referred_id"], 0.0) + e["amount"]
+    return {
+        "code": code,
+        "commission_percent": REFERRAL_COMMISSION_PERCENT,
+        "welcome_bonus": REFERRAL_WELCOME_BONUS,
+        "total_referred": len(referred),
+        "total_earned": round(sum(earned_by_user.values()), 2),
+        "referrals": [{
+            "id": str(r["_id"]),
+            "name": r.get("name", ""),
+            "joined_at": r.get("created_at"),
+            "earned": round(earned_by_user.get(str(r["_id"]), 0.0), 2),
+        } for r in referred],
+    }
 
 
 app.include_router(api_router)
@@ -368,6 +589,20 @@ async def startup():
             await db.products.insert_one({**s, "is_deleted": False, "created_at": datetime.now(timezone.utc).isoformat()})
         else:
             await db.products.update_one({"_id": existing_p["_id"]}, {"$set": {"is_deleted": False}})
+    # backfill referral codes for existing users
+    async for u in db.users.find({"referral_code": {"$in": [None, ""]}}):
+        await db.users.update_one(
+            {"_id": u["_id"]},
+            {"$set": {"referral_code": build_referral_code(u.get("name", ""), u["email"])}},
+        )
+    await db.coupons.create_index("code", unique=True)
+    if await db.coupons.count_documents({}) == 0:
+        await db.coupons.insert_many([
+            {"code": "INFLOW20", "percent": 20.0, "scope": "purchase", "active": True,
+             "created_at": datetime.now(timezone.utc).isoformat()},
+            {"code": "BIENVENIDA10", "percent": 10.0, "scope": "topup", "active": True,
+             "created_at": datetime.now(timezone.utc).isoformat()},
+        ])
     try:
         init_storage()
         logger.info("Storage initialized")

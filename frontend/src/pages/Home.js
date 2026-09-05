@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/ProductCard";
 import Testimonials from "@/components/Testimonials";
 import AuthDialog from "@/components/AuthDialog";
-import { useBuy, useProducts } from "@/hooks/useShop";
+import PurchaseDialog from "@/components/PurchaseDialog";
+import { usePurchaseGate, useProducts } from "@/hooks/useShop";
 import { useAuth } from "@/context/AuthContext";
 import {
   Heart, Wallet, ShieldCheck, Zap, ArrowRight, TrendingUp, UserPlus, Eye,
@@ -42,7 +43,7 @@ export default function Home() {
   const { user } = useAuth();
   const { products, load } = useProducts();
   const [authOpen, setAuthOpen] = useState(false);
-  const buy = useBuy(() => setAuthOpen(true));
+  const { pending, request: buy, close } = usePurchaseGate(() => setAuthOpen(true));
 
   useEffect(() => {
     load();
@@ -258,6 +259,7 @@ export default function Home() {
 
       <Testimonials />
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+      <PurchaseDialog product={pending} onClose={close} />
     </main>
   );
 }

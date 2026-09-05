@@ -26,6 +26,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) localStorage.setItem("inflow_ref", ref.toUpperCase());
+  }, []);
+
+  useEffect(() => {
     refreshUser();
   }, [refreshUser]);
 
@@ -36,9 +41,15 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const register = async (name, email, password) => {
-    const { data } = await api.post("/auth/register", { name, email, password });
+  const register = async (name, email, password, referralCode) => {
+    const { data } = await api.post("/auth/register", {
+      name,
+      email,
+      password,
+      referral_code: referralCode || null,
+    });
     localStorage.setItem("inflow_token", data.token);
+    localStorage.removeItem("inflow_ref");
     setUser(data.user);
     return data.user;
   };

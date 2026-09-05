@@ -11,6 +11,7 @@ const navItems = [
   { to: "/", label: "Inicio" },
   { to: "/productos", label: "Productos" },
   { to: "/mi-cuenta", label: "Mi Cuenta" },
+  { to: "/referidos", label: "Referidos" },
   { to: "/cargar-saldo", label: "Cargar Saldo" },
 ];
 

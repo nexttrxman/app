@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 4 — full validation of NEW features (coupons, referrals) + regression. Backend: 32/32 pytest PASS (17 legacy + 15 new). New backend file /app/backend/tests/test_coupons_referrals.py covers: GET /api/coupons/validate (INFLOW20 purchase ok/topup rejected, BIENVENIDA10 topup ok, invalid code, unauth 401), POST /api/wallet/purchase/{id} with coupon (discount math, one-use-per-user reuse blocked with 'Ya usaste este cupón', invalid coupon rejected), POST /api/wallet/topup with BIENVENIDA10 (bonus=5 on 50, balance=55, both topup + bonus transactions logged), referrals (signup w/ valid ref gives $5 welcome, invalid ref does not break signup, /api/referrals/me returns code/total_referred/list, purchase by referred user credits 10% commission to inviter + creates 'referral' transaction), admin coupons CRUD (users 403, duplicate code 400, percent 0/150 rejected, PATCH toggles active flag which makes /coupons/validate reject, DELETE removes). Frontend Playwright end-to-end: (1) /?ref=CODE saves inflow_ref to localStorage AND when header-login-btn opens auth-dialog it auto-switches to register mode with auth-referral-input PRE-FILLED with the code; registering yields header-balance $5.00. (2) Topup $10 -> $15. (3) Products page — buying '500 Likes Instagram' opens purchase-dialog; entering INFLOW20 + coupon-apply-btn shows coupon-applied, purchase-discount '−$1.00' and purchase-total '$4.00' (20% off $5); purchase-confirm-btn charges and header-balance updates to $11.00. (4) Insufficient balance flow: buying Pack Growth Pro ($99) with $11 shows purchase-insufficient and the confirm button reads 'Cargar saldo' and navigates to /cargar-saldo when clicked. (5) TopUp with BIENVENIDA10: topup-coupon-apply-btn reveals topup-bonus-summary ('Cargas $50.00 · Bono BIENVENIDA10 (+10%) +$5.00 · Recibes $55.00'); after submit header-balance went from $11 to $66 (=11+50+5). (6) /referidos: referral-code, referral-link, copy-code-btn, copy-link-btn, share-whatsapp, share-x, share-instagram, referral-count, referral-earnings all visible; no-referrals empty-state shows for the fresh inviter (invitee list was for a different account). (7) /mi-cuenta -> account-referrals-btn -> /referidos navigation works. (8) Admin coupons CRUD via UI: created UI-random coupon (percent 25, scope=purchase), row shows in admin-coupons-list; coupon-toggle-<CODE> toggled, coupon-delete-<CODE> removed row + toast 'Cupón eliminado'. No console page errors during any flow.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_inflow_backend.py",
+    "/app/backend/tests/test_coupons_referrals.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/coupons_referrals.xml"
+  ],
+  "action_items": [
+    "(Carryover) storage put_object/get_object use blocking `requests` inside async handlers — use httpx.AsyncClient or run_in_threadpool.",
+    "(Carryover) CORS_ORIGINS='*' with allow_credentials=True is spec-invalid; app uses Bearer tokens so either set allow_credentials=False or specify explicit origins.",
+    "(Carryover) /api/files/{path} raises 500 on storage 404 — convert to 404.",
+    "(New minor) /api/wallet/purchase does NOT check that the referrer_id is a valid ObjectId — if a doc has a legacy string, ObjectId(referrer_id) would crash. Consider guard.",
+    "(New minor) Referral commission is paid on discounted total (fine), but there's no cap or protection against self-referral if a user manually seeds referred_by to their own id. Not exploitable via public API today, but worth a guard in register().",
+    "(UX) share-instagram button copies the link to clipboard (Instagram has no share url) — consider a toast confirming the copy so users know."
+  ],
+  "critical_code_review_comments": [
+    "server.py is ~610 lines and mixes storage, auth, products, wallet, coupons, referrals — split into routers/*.py modules; also splits are needed on the frontend Admin.js which is now hosting both product and coupon CRUD (>350 lines).",
+    "get_valid_coupon raises HTTPException inside a helper — good; but the coupon match is case-insensitive on lookup (upper) yet SCOPE_LABELS keying assumes lowercase scope from client; validate scope input to be one of ('purchase','topup','both').",
+    "Coupon redemption + user balance update are not in a transaction (Mongo session) — a crash between insert_one(redemption) and inc(balance) leaves inconsistent state. For MVP OK but flag as follow-up.",
+    "Referral commission $inc is not gated on inviter still existing/active — if the inviter is deleted, commission goes to a stale id.",
+    "Purchase uses `data: Optional[PurchaseInput] = None`; FastAPI will still require a JSON body by default with 422 when Content-Type is application/json and body is empty — non-coupon purchases from frontend send `{}` (verified), so fine, but call this out in docs."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_coupons_referrals.py (new)"
+  ],
+  "success_rate": { "backend": "100% (32/32)", "frontend": "100% (all coupon+referral+admin flows pass)" },
+  "test_credentials": "Admin admin@inflowmkt.com / InflowAdmin2026 verified. New users register dynamically with Test1234. Seed coupons INFLOW20 (20%, purchase) and BIENVENIDA10 (10%, topup) both work.",
+  "seed_data_creation": "Created ephemeral inviter/invitee users and one TEST_UI coupon via UI; deleted at end.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New testids covered: coupon-input, coupon-apply-btn, coupon-remove-btn, coupon-applied, purchase-discount, purchase-total, purchase-insufficient, purchase-confirm-btn (text becomes 'Cargar saldo' when insufficient and navigates to /cargar-saldo). Topup: topup-coupon-input, topup-coupon-apply-btn, topup-coupon-remove-btn, topup-bonus-summary, topup-submit-btn, quick-25/50/100/250, method-card/qr/transfer. Referrals: /referidos referral-code, referral-link, copy-code-btn, copy-link-btn, share-whatsapp, share-x, share-instagram, referral-count, referral-earnings, referrals-list, no-referrals. Auth: auth-referral-input auto-fills from localStorage 'inflow_ref' when dialog opens (useEffect on `open`), and auto-switches mode to 'register' — do NOT click auth-toggle-mode in tests after ?ref navigation. Admin coupons: admin-coupons-section, coupon-code-input, coupon-percent-input, coupon-scope-purchase/topup/both, coupon-save-btn, admin-coupons-list, admin-coupon-<CODE>, coupon-toggle-<CODE>, coupon-delete-<CODE>. Backend constants REFERRAL_WELCOME_BONUS=5.0, REFERRAL_COMMISSION_PERCENT=10.0. Purchase endpoint returns {balance, product, price, discount, total}.",
+  "rca of the issue": "N/A — all iteration-4 acceptance criteria pass."
+}

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Upload, ShieldAlert, ImageIcon } from "lucide-react";
+import { Plus, Trash2, Loader2, Upload, ShieldAlert, ImageIcon, TicketPercent, Power } from "lucide-react";
 
 const inputCls =
   "h-11 bg-[#0b0617] border-white/10 text-white placeholder:text-[#6f6690] rounded-xl focus-visible:ring-1 focus-visible:ring-[#ff3dbe] focus-visible:border-[#ff3dbe]/60";
@@ -22,6 +22,54 @@ export default function Admin() {
   const [imageUrl, setImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [coupons, setCoupons] = useState([]);
+  const [cCode, setCCode] = useState("");
+  const [cPercent, setCPercent] = useState("");
+  const [cScope, setCScope] = useState("both");
+  const [cSaving, setCSaving] = useState(false);
+
+  const loadCoupons = useCallback(async () => {
+    const { data } = await api.get("/admin/coupons");
+    setCoupons(data);
+  }, []);
+
+  const createCoupon = async (e) => {
+    e.preventDefault();
+    setCSaving(true);
+    try {
+      await api.post("/admin/coupons", {
+        code: cCode.trim().toUpperCase(),
+        percent: parseFloat(cPercent),
+        scope: cScope,
+      });
+      toast.success("Cupón creado");
+      setCCode(""); setCPercent(""); setCScope("both");
+      loadCoupons();
+    } catch (err) {
+      toast.error(apiError(err.response?.data?.detail));
+    } finally {
+      setCSaving(false);
+    }
+  };
+
+  const toggleCoupon = async (c) => {
+    try {
+      await api.patch(`/admin/coupons/${c.id}`, { active: !c.active });
+      loadCoupons();
+    } catch (err) {
+      toast.error(apiError(err.response?.data?.detail));
+    }
+  };
+
+  const deleteCoupon = async (id) => {
+    try {
+      await api.delete(`/admin/coupons/${id}`);
+      toast.success("Cupón eliminado");
+      loadCoupons();
+    } catch (err) {
+      toast.error(apiError(err.response?.data?.detail));
+    }
+  };
 
   const load = useCallback(async () => {
     const { data } = await api.get("/products");
@@ -29,8 +77,11 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    if (user?.role === "admin") load();
-  }, [user, load]);
+    if (user?.role === "admin") {
+      load();
+      loadCoupons();
+    }
+  }, [user, load, loadCoupons]);
 
   const upload = async (e) => {
     const file = e.target.files?.[0];
@@ -214,6 +265,127 @@ export default function Admin() {
             </div>
           </div>
         </div>
+
+        {/* Coupons */}
+        <section className="mt-16" data-testid="admin-coupons-section">
+          <h2 className="font-display text-lg font-bold flex items-center gap-2">
+            <TicketPercent size={18} className="text-[#2ee6ff]" /> Cupones de descuento
+          </h2>
+          <p className="text-sm text-[#a49cbd] mt-2">
+            Un cupón se puede usar una sola vez por cliente. En compras descuenta el porcentaje; en cargas de saldo lo suma como bono.
+          </p>
+
+          <div className="grid lg:grid-cols-2 gap-8 mt-7">
+            <form onSubmit={createCoupon} className="panel rounded-[26px] p-7 space-y-5 h-fit" data-testid="admin-coupon-form">
+              <div className="space-y-2">
+                <Label className={labelCls}>Código</Label>
+                <Input
+                  data-testid="coupon-code-input"
+                  value={cCode}
+                  onChange={(e) => setCCode(e.target.value.toUpperCase())}
+                  required
+                  placeholder="INFLOW20"
+                  className={inputCls}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className={labelCls}>Descuento (%)</Label>
+                <Input
+                  data-testid="coupon-percent-input"
+                  type="number"
+                  min="1"
+                  max="100"
+                  step="1"
+                  value={cPercent}
+                  onChange={(e) => setCPercent(e.target.value)}
+                  required
+                  className={inputCls}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className={labelCls}>Aplica a</Label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { id: "purchase", label: "Compras" },
+                    { id: "topup", label: "Cargas" },
+                    { id: "both", label: "Ambas" },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      data-testid={`coupon-scope-${s.id}`}
+                      onClick={() => setCScope(s.id)}
+                      className={`py-3 rounded-xl border text-sm font-semibold transition-colors ${
+                        cScope === s.id
+                          ? "border-[#2ee6ff] text-[#2ee6ff] bg-[#2ee6ff]/10"
+                          : "border-white/10 text-[#a49cbd] hover:border-white/30"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Button
+                data-testid="coupon-save-btn"
+                type="submit"
+                disabled={cSaving}
+                className="w-full h-11 rounded-full font-semibold text-[#0a0512] bg-[#2ee6ff] hover:bg-[#66eeff] transition-colors"
+              >
+                {cSaving ? <Loader2 className="animate-spin" size={18} /> : "Crear cupón"}
+              </Button>
+            </form>
+
+            <div>
+              <h3 className="font-display text-base font-bold mb-4">Cupones ({coupons.length})</h3>
+              {coupons.length === 0 ? (
+                <div className="panel rounded-[26px] p-8 text-center text-[#6f6690]" data-testid="no-coupons">
+                  Aún no hay cupones.
+                </div>
+              ) : (
+                <div className="panel rounded-[26px] divide-y divide-white/[0.06] overflow-hidden" data-testid="admin-coupons-list">
+                  {coupons.map((c) => (
+                    <div key={c.id} className="flex items-center gap-4 px-5 py-4" data-testid={`admin-coupon-${c.code}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-display text-sm font-extrabold text-white truncate">{c.code}</div>
+                        <div className="text-xs text-[#6f6690] mt-0.5">
+                          {c.scope === "purchase" ? "Compras" : c.scope === "topup" ? "Cargas" : "Compras y cargas"} · {c.uses} uso{c.uses === 1 ? "" : "s"}
+                        </div>
+                      </div>
+                      <span className="font-display text-sm font-bold text-[#2ee6ff] shrink-0">−{c.percent}%</span>
+                      <span
+                        className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full shrink-0 ${
+                          c.active ? "text-[#2ee6ff] bg-[#2ee6ff]/10" : "text-[#6f6690] bg-white/5"
+                        }`}
+                      >
+                        {c.active ? "Activo" : "Pausado"}
+                      </span>
+                      <Button
+                        data-testid={`coupon-toggle-${c.code}`}
+                        onClick={() => toggleCoupon(c)}
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full text-[#6f6690] hover:text-[#2ee6ff] hover:bg-white/5 shrink-0"
+                      >
+                        <Power size={16} />
+                      </Button>
+                      <Button
+                        data-testid={`coupon-delete-${c.code}`}
+                        onClick={() => deleteCoupon(c.id)}
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full text-[#6f6690] hover:text-[#ff3dbe] hover:bg-white/5 shrink-0"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
       </div>
     </main>
   );

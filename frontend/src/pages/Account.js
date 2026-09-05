@@ -117,6 +117,23 @@ export default function Account() {
         </div>
 
         {/* History */}
+        <div className="panel rounded-[22px] p-6 mt-6 flex flex-wrap items-center gap-4" data-testid="account-referral-cta">
+          <div className="flex-1 min-w-[220px]">
+            <div className="eyebrow text-[#ff8de0]">Invita y gana</div>
+            <p className="text-sm text-[#a49cbd] mt-2">
+              Comparte tu código: tu amigo arranca con saldo y tú ganas comisión de cada compra suya.
+            </p>
+          </div>
+          <Button
+            data-testid="account-referrals-btn"
+            onClick={() => navigate("/referidos")}
+            variant="outline"
+            className="rounded-full h-11 px-6 font-semibold bg-transparent border-[#ff3dbe]/40 text-[#ff3dbe] hover:bg-[#ff3dbe]/10 hover:text-[#ff3dbe] transition-colors"
+          >
+            Ver mi panel de referidos
+          </Button>
+        </div>
+
         <div className="flex items-center gap-2.5 mt-16 mb-6">
           <History size={18} className="text-[#ff3dbe]" />
           <h2 className="font-display text-lg font-bold">Historial de movimientos</h2>

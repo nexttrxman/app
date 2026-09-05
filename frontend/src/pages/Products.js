@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "@/components/ProductCard";
 import AuthDialog from "@/components/AuthDialog";
+import PurchaseDialog from "@/components/PurchaseDialog";
 import { Input } from "@/components/ui/input";
-import { useBuy, useProducts } from "@/hooks/useShop";
+import { usePurchaseGate, useProducts } from "@/hooks/useShop";
 import { Loader2, PackageOpen, Search, X } from "lucide-react";
 
 export default function Products() {
@@ -10,7 +11,7 @@ export default function Products() {
   const [authOpen, setAuthOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Todos");
-  const buy = useBuy(() => setAuthOpen(true));
+  const { pending, request: buy, close } = usePurchaseGate(() => setAuthOpen(true));
 
   useEffect(() => {
     load();
@@ -112,6 +113,7 @@ export default function Products() {
       </div>
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+      <PurchaseDialog product={pending} onClose={close} />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { apiError } from "@/lib/api";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Gift } from "lucide-react";
 
 const inputCls =
   "h-11 bg-[#0b0617] border-white/10 text-white placeholder:text-[#6f6690] rounded-xl focus-visible:ring-1 focus-visible:ring-[#ff3dbe] focus-visible:border-[#ff3dbe]/60";
@@ -17,7 +17,18 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referral, setReferral] = useState(localStorage.getItem("inflow_ref") || "");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      const stored = localStorage.getItem("inflow_ref");
+      if (stored) {
+        setReferral(stored);
+        setMode("register");
+      }
+    }
+  }, [open]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -27,7 +38,7 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
         await login(email, password);
         toast.success("¡Bienvenido de nuevo!");
       } else {
-        await register(name, email, password);
+        await register(name, email, password, referral.trim());
         toast.success("Cuenta creada con éxito");
       }
       onOpenChange(false);
@@ -98,6 +109,21 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
               placeholder="••••••••"
             />
           </div>
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6f6690] flex items-center gap-1.5">
+                <Gift size={12} /> Código de invitación (opcional)
+              </Label>
+              <Input
+                data-testid="auth-referral-input"
+                value={referral}
+                onChange={(e) => setReferral(e.target.value.toUpperCase())}
+                className={inputCls}
+                placeholder="Ej: SOFI1A2B"
+              />
+              <p className="text-xs text-[#6f6690]">Con un código válido arrancas con saldo de regalo.</p>
+            </div>
+          )}
           <Button
             data-testid="auth-submit-btn"
             type="submit"

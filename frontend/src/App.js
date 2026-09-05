@@ -9,6 +9,7 @@ import Products from "@/pages/Products";
 import Account from "@/pages/Account";
 import TopUp from "@/pages/TopUp";
 import Admin from "@/pages/Admin";
+import Referrals from "@/pages/Referrals";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route path="/productos" element={<Products />} />
             <Route path="/mi-cuenta" element={<Account />} />
             <Route path="/cargar-saldo" element={<TopUp />} />
+            <Route path="/referidos" element={<Referrals />} />
             <Route path="/admin" element={<Admin />} />
           </Routes>
           <Footer />

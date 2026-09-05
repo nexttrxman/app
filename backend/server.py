@@ -91,7 +91,24 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def get_jwt_secret() -> str:
-    return os.environ["JWT_SECRET"]
+    secret = os.environ.get("JWT_SECRET")
+    if not secret:
+        secret = "dev-secret-change-me"
+        logger.warning("JWT_SECRET not set; using a development fallback. Configure a strong secret in production.")
+    return secret
+
+
+def set_auth_cookie(response: Response, token: str):
+    secure = os.environ.get("COOKIE_SECURE", "true").lower() in {"1", "true", "yes", "on"}
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60,
+        path="/",
+    )
 
 
 def create_access_token(user_id: str, email: str) -> str:
@@ -209,7 +226,7 @@ class CouponToggleInput(BaseModel):
 
 # ---------------- Auth routes ----------------
 @api_router.post("/auth/register")
-async def register(data: RegisterInput):
+async def register(data: RegisterInput, response: Response):
     email = data.email.lower()
     if await db.users.find_one({"email": email}):
         raise HTTPException(status_code=400, detail="Este email ya está registrado")
@@ -246,17 +263,25 @@ async def register(data: RegisterInput):
             "created_at": now,
         })
     token = create_access_token(str(result.inserted_id), email)
+    set_auth_cookie(response, token)
     return {"token": token, "user": serialize_user(doc)}
 
 
 @api_router.post("/auth/login")
-async def login(data: LoginInput):
+async def login(data: LoginInput, response: Response):
     email = data.email.lower()
     user = await db.users.find_one({"email": email})
     if not user or not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
     token = create_access_token(str(user["_id"]), email)
+    set_auth_cookie(response, token)
     return {"token": token, "user": serialize_user(user)}
+
+
+@api_router.post("/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token", path="/")
+    return {"success": True}
 
 
 @api_router.get("/auth/me")
@@ -556,20 +581,23 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     await db.users.create_index("email", unique=True)
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@inflowmkt.com").lower()
-    admin_password = os.environ.get("ADMIN_PASSWORD", "InflowAdmin2026")
-    existing = await db.users.find_one({"email": admin_email})
-    if existing is None:
-        await db.users.insert_one({
-            "name": "Admin INFLOW",
-            "email": admin_email,
-            "password_hash": hash_password(admin_password),
-            "role": "admin",
-            "balance": 0.0,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-    elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password), "role": "admin"}})
+    admin_email = (os.environ.get("ADMIN_EMAIL") or "admin@localhost").lower()
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if admin_password:
+        existing = await db.users.find_one({"email": admin_email})
+        if existing is None:
+            await db.users.insert_one({
+                "name": "Admin INFLOW",
+                "email": admin_email,
+                "password_hash": hash_password(admin_password),
+                "role": "admin",
+                "balance": 0.0,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+        elif not verify_password(admin_password, existing["password_hash"]):
+            await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password), "role": "admin"}})
+    else:
+        logger.warning("ADMIN_PASSWORD not set. No default admin account will be created. Set ADMIN_EMAIL and ADMIN_PASSWORD in the environment before deploying.")
     await db.products.update_many({"category": {"$exists": False}}, {"$set": {"category": "General"}})
     await db.products.update_many(
         {"name": {"$in": ["Neon Console X", "Pulse Mouse Pro", "Chrono Watch S"]}},

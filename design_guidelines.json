@@ -1,0 +1,150 @@
+{
+  "theme": "dark",
+  "typography": {
+    "strategy": "High-contrast, technical futuristic feel. Wide display sans for headings and clean legible sans for body.",
+    "headings": {
+      "font": "Outfit",
+      "import_url": "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap",
+      "usage": "Use for all H1, H2, H3 and critical numbers/balances. tracking-tighter for H1."
+    },
+    "body": {
+      "font": "Manrope",
+      "import_url": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap",
+      "usage": "Use for descriptions, labels, and standard text."
+    },
+    "scale": {
+      "h1": "text-5xl md:text-6xl font-black tracking-tighter leading-none text-white",
+      "h2": "text-3xl md:text-4xl font-bold tracking-tight text-white",
+      "h3": "text-xl md:text-2xl font-semibold text-zinc-100",
+      "body": "text-base text-zinc-400 leading-relaxed",
+      "label": "text-xs font-bold uppercase tracking-[0.2em] text-zinc-500"
+    }
+  },
+  "colors": {
+    "palette_name": "Electric & Neon (Archetype 7)",
+    "backgrounds": {
+      "app": "#050507",
+      "panel": "#0C0C12",
+      "card": "#12121A"
+    },
+    "accents": {
+      "magenta": "#FF00FF",
+      "cyan": "#00E5FF",
+      "neon_green": "#00FF9D",
+      "electric_blue": "#2962FF"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "muted": "#52525B"
+    },
+    "borders": {
+      "subtle": "rgba(255,255,255,0.05)",
+      "active": "rgba(0, 255, 157, 0.5)"
+    }
+  },
+  "visual enhancers": {
+    "shadows": {
+      "glow_green": "0 0 20px rgba(0, 255, 157, 0.4)",
+      "glow_magenta": "0 0 20px rgba(255, 0, 255, 0.4)",
+      "glow_cyan": "0 0 20px rgba(0, 229, 255, 0.4)"
+    },
+    "borders": "Use sharp or slightly rounded corners (max rounded-md). Rely on 1px solid borders (border-white/10) to define sections. Never use soft drop shadows, use colored glows.",
+    "textures": "Background should be very dark, almost void-like. Use subtle radial gradients in the background to highlight sections, e.g., a massive 20% opacity cyan radial glow behind the hero text."
+  },
+  "component name": [
+    "Button",
+    "Card",
+    "Input",
+    "Dialog",
+    "Toast",
+    "Badge"
+  ],
+  "grids": {
+    "product_catalog": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6",
+    "dashboard_stats": "grid grid-cols-1 md:grid-cols-3 gap-4",
+    "spacing_scale": "p-4, p-6, p-8, p-12. Generous padding in sections."
+  },
+  "layouts": {
+    "header": "Sticky top, z-50, backdrop-blur-xl bg-[#050507]/80, border-b border-white/10. Logo left, Nav center, User Wallet/Balance right.",
+    "hero": "Min-h-[60vh] flex flex-col items-center justify-center text-center relative overflow-hidden. Add glowing radial backgrounds.",
+    "user_panel": "Grid layout. Left sidebar or top tabs for navigation (Historial, Cargar Saldo). Main area displays big glowing Balance Card.",
+    "testimonials": "Use react-fast-marquee. A single infinite scrolling row of sleek dark cards with neon borders containing user feedback."
+  },
+  "motion": {
+    "hover_states": "Buttons and Cards must have strong hover states: scale up slightly (scale-105), intensify border color to a neon accent, and add a glow box-shadow.",
+    "page_transitions": "Use Framer Motion for subtle fade-in and slide-up of content when pages mount.",
+    "interactions": "Wallet balance deduction should animate if possible. Error states (insufficient balance) should shake slightly."
+  },
+  "accessibility": {
+    "contrast": "Ensure text over neon backgrounds is black or dark gray. White text should only go on dark backgrounds.",
+    "testing": "All interactive elements MUST have data-testid attributes (e.g., data-testid='buy-button-item1').",
+    "feedback": "Use toast notifications (Sonner) for purchase success, insufficient balance errors, and balance load success."
+  },
+  "media": {
+    "treatment": "Images in product cards should have a subtle dark overlay or be placed on pitch black backgrounds to match the tech/neon vibe."
+  },
+  "3d libraries": {
+    "usage": "None strictly required. Keep it fast and 2D neon-focused."
+  },
+  "image urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1626908013351-800ddd734b8a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODR8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMG5lb24lMjBnbG93JTIwZGFyayUyMHRlY2hub2xvZ3l8ZW58MHx8fHwxNzg4NjA5Nzg4fDA&ixlib=rb-4.1.0&q=85",
+      "category": "Hero Background / Abstract",
+      "description": "Black and red/magenta light illustration. Great for a subtle background glow mask in the hero."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1787309067218-33b37d25035f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwzfHxmdXR1cmlzdGljJTIwZ2FkZ2V0JTIwcHJvZHVjdCUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4ODYwOTc4OHww&ixlib=rb-4.1.0&q=85",
+      "category": "Product Dummy 1",
+      "description": "Gaming console with blue light."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1750767303635-4df246680549?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwxfHxmdXR1cmlzdGljJTIwZ2FkZ2V0JTIwcHJvZHVjdCUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4ODYwOTc4OHww&ixlib=rb-4.1.0&q=85",
+      "category": "Product Dummy 2",
+      "description": "Ergonomic modern mouse."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1610991138614-0d4d78ac6de8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHw0fHxmdXR1cmlzdGljJTIwZ2FkZ2V0JTIwcHJvZHVjdCUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4ODYwOTc4OHww&ixlib=rb-4.1.0&q=85",
+      "category": "Product Dummy 3",
+      "description": "Digital silver/black watch."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1533461502717-83546f485d24?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2Mzl8MHwxfHNlYXJjaHwxfHxuZW9uJTIwcG9ydHJhaXQlMjBtb2Rlcm58ZW58MHx8fHwxNzg4NjA5Nzg4fDA&ixlib=rb-4.1.0&q=85",
+      "category": "Testimonial Avatar",
+      "description": "Modern portrait with neon lighting."
+    }
+  ],
+  "component_path": "/app/frontend/src/components/ui/",
+  "instructions_to_main_agent": [
+    "CRITICAL: Generate `.js` and `.jsx` files, NOT `.tsx` files. Remove type annotations.",
+    "Set up a global Context or Zustand store for 'User' to handle login state, wallet balance, and purchase history. This is vital for the 'saldo interno' feature.",
+    "Implement the '1-2 clicks purchase' flow: From the product grid, clicking 'Comprar' immediately checks wallet balance. If balance >= price, deduct balance, add to history, show Success Toast. If not, show Error Toast with 'Cargar Saldo' button.",
+    "For the Testimonial section, use the 'react-fast-marquee' library to create a seamless auto-scrolling loop. Pause on hover.",
+    "The admin panel should be a simple protected route where an admin can add products (name, description, price, image url) to the global state/DB.",
+    "Inject tailwind glow effects into the configuration: extend colors and dropShadow in tailwind.config.js to include neon green, cyan, and magenta glows.",
+    "Use lucide-react icons heavily to reinforce the tech vibe (e.g., Wallet, Zap, History, User)."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) only where appropriate (like the header).",
+    "You MUST NOT apply universal transition (e.g., transition: all). Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container. Do not add `.App { text-align: center; }` in CSS.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations separate good from extraordinary.",
+    "Use pre-existing components from src/components/ui when applicable.",
+    "Use 'sonner' for toasts located in /app/src/components/ui/sonner.js (or .jsx)."
+  ],
+  "GENERAL UI UX DESIGN GUIDELINES": [
+    "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., data-testid='login-button').",
+    "Do NOT use complete transparent backgrounds in headers or overlays if content scrolls beneath them. Ensure readability.",
+    "Enforce high contrast ratios. Do not rely solely on color to convey state (use icons and borders too).",
+    "Primary call-to-actions (Buy, Load Balance) must use the dominant neon color (e.g., Neon Green) with a distinct glow to pull attention.",
+    "Always generate JavaScript files (.js/.jsx). Do not output TypeScript."
+  ]
+}

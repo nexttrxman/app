@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AuthDialog from "@/components/AuthDialog";
 import { toast } from "sonner";
-import { CreditCard, QrCode, Landmark, Wallet, Loader2, Lock, Check } from "lucide-react";
+import { CreditCard, QrCode, Landmark, Wallet, Loader2, Lock, Check, ShieldCheck } from "lucide-react";
 
 const methods = [
-  { id: "card", label: "Tarjeta", icon: CreditCard, color: "#ff2ec4" },
-  { id: "qr", label: "QR", icon: QrCode, color: "#00e5ff" },
-  { id: "transfer", label: "Transferencia", icon: Landmark, color: "#ff00ff" },
+  { id: "card", label: "Tarjeta", icon: CreditCard, color: "#ff3dbe" },
+  { id: "qr", label: "QR", icon: QrCode, color: "#2ee6ff" },
+  { id: "transfer", label: "Transferencia", icon: Landmark, color: "#9b5cff" },
 ];
 const quick = [25, 50, 100, 250];
 
@@ -33,7 +33,7 @@ export default function TopUp() {
     try {
       const { data } = await api.post("/wallet/topup", { amount: val, method });
       setBalance(data.balance);
-      toast.success(`¡Saldo cargado!`, { description: `Nuevo saldo: $${data.balance.toFixed(2)}` });
+      toast.success("¡Saldo cargado!", { description: `Nuevo saldo: $${data.balance.toFixed(2)}` });
       setAmount("");
       setTimeout(() => navigate("/mi-cuenta"), 700);
     } catch (err) {
@@ -45,93 +45,103 @@ export default function TopUp() {
 
   if (!user) {
     return (
-      <main className="max-w-md mx-auto px-5 py-32 text-center min-h-[60vh]">
-        <Lock size={40} className="mx-auto text-[#ff00ff] mb-4" />
-        <h1 className="font-display text-2xl font-black mb-2">Inicia sesión</h1>
-        <p className="text-zinc-400 mb-6">Necesitas una cuenta para cargar saldo.</p>
-        <Button onClick={() => setAuthOpen(true)} className="bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full px-6 glow-pink">
-          Entrar
-        </Button>
+      <main className="max-w-md mx-auto px-5 py-32 min-h-[60vh]">
+        <div className="panel rounded-[24px] p-8 text-center">
+          <span className="h-12 w-12 rounded-2xl bg-[#9b5cff]/15 border border-[#9b5cff]/40 flex items-center justify-center mx-auto">
+            <Lock size={20} className="text-[#9b5cff]" />
+          </span>
+          <h1 className="font-display text-xl font-extrabold mt-6">Inicia sesión</h1>
+          <p className="text-base text-[#a49cbd] mt-3">Necesitas una cuenta para cargar saldo.</p>
+          <Button
+            data-testid="topup-login-btn"
+            onClick={() => setAuthOpen(true)}
+            className="mt-7 rounded-full h-11 px-7 font-semibold text-[#0a0512] bg-[#ff3dbe] hover:bg-[#ff65cc] transition-colors"
+          >
+            Entrar
+          </Button>
+        </div>
         <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
       </main>
     );
   }
 
   return (
-    <main className="max-w-2xl mx-auto px-5 py-14 min-h-[70vh]">
-      <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#00e5ff]">Billetera</span>
-      <h1 className="font-display text-4xl font-black tracking-tight mt-2 mb-2">Cargar saldo</h1>
-      <p className="text-zinc-400 mb-8 flex items-center gap-2">
-        <Wallet size={16} className="text-[#ff2ec4]" /> Saldo actual:{" "}
-        <span className="text-[#ff2ec4] font-bold">${user.balance?.toFixed(2)}</span>
-      </p>
-
-      <div className="rounded-2xl p-6 sm:p-8 bg-[#0c0c12] border border-white/10">
-        {/* Method */}
-        <label className="text-xs uppercase tracking-widest text-zinc-500">Método de pago</label>
-        <div className="grid grid-cols-3 gap-3 mt-3 mb-6">
-          {methods.map((m) => (
-            <button
-              key={m.id}
-              data-testid={`method-${m.id}`}
-              onClick={() => setMethod(m.id)}
-              className={`relative p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
-                method === m.id ? "border-[var(--c)] bg-white/5" : "border-white/10 hover:border-white/20"
-              }`}
-              style={{ "--c": m.color }}
-            >
-              {method === m.id && (
-                <Check size={14} className="absolute top-2 right-2" style={{ color: m.color }} />
-              )}
-              <m.icon size={22} style={{ color: m.color }} />
-              <span className="text-sm font-semibold text-white">{m.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Quick amounts */}
-        <label className="text-xs uppercase tracking-widest text-zinc-500">Monto</label>
-        <div className="grid grid-cols-4 gap-3 mt-3 mb-4">
-          {quick.map((q) => (
-            <button
-              key={q}
-              data-testid={`quick-${q}`}
-              onClick={() => setAmount(String(q))}
-              className={`py-2.5 rounded-lg border font-display font-bold transition-all ${
-                amount === String(q)
-                  ? "border-[#ff2ec4] text-[#ff2ec4] bg-[#ff2ec4]/10"
-                  : "border-white/10 text-zinc-300 hover:border-white/30"
-              }`}
-            >
-              ${q}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative mb-6">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-display text-lg">$</span>
-          <Input
-            data-testid="topup-amount-input"
-            type="number"
-            min="1"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Otro monto"
-            className="bg-black/40 border-white/10 text-white h-12 pl-8 text-lg font-display focus-visible:ring-[#ff2ec4]"
-          />
-        </div>
-
-        <Button
-          data-testid="topup-submit-btn"
-          onClick={submit}
-          disabled={busy}
-          className="w-full h-12 bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full text-base hover:scale-[1.02] transition-transform glow-pink"
-        >
-          {busy ? <Loader2 className="animate-spin" size={18} /> : "Cargar saldo (simulado)"}
-        </Button>
-        <p className="text-xs text-zinc-600 text-center mt-3">
-          Pasarela de pago simulada · el saldo se acredita al instante.
+    <main className="relative overflow-hidden min-h-[80vh]">
+      <div className="absolute inset-x-0 top-0 h-[380px] aurora-cyan" />
+      <div className="relative max-w-[720px] mx-auto px-5 py-16 lg:py-20">
+        <span className="eyebrow text-[#2ee6ff]">Billetera</span>
+        <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tighter mt-4">Cargar saldo</h1>
+        <p className="text-base text-[#a49cbd] mt-4 flex items-center gap-2">
+          <Wallet size={16} className="text-[#ff3dbe]" /> Saldo actual:
+          <span className="font-display font-bold text-white">${user.balance?.toFixed(2)}</span>
         </p>
+
+        <div className="panel rounded-[26px] p-6 sm:p-8 mt-10">
+          <label className="eyebrow text-[#6f6690]">Método de pago</label>
+          <div className="grid grid-cols-3 gap-3 mt-4 mb-8">
+            {methods.map((m) => {
+              const active = method === m.id;
+              return (
+                <button
+                  key={m.id}
+                  data-testid={`method-${m.id}`}
+                  onClick={() => setMethod(m.id)}
+                  className={`relative p-5 rounded-2xl border flex flex-col items-center gap-2.5 transition-colors duration-200 ${
+                    active ? "bg-white/[0.06]" : "border-white/10 hover:border-white/25"
+                  }`}
+                  style={active ? { borderColor: m.color, boxShadow: `0 10px 30px -14px ${m.color}` } : undefined}
+                >
+                  {active && <Check size={13} className="absolute top-2.5 right-2.5" style={{ color: m.color }} />}
+                  <m.icon size={21} style={{ color: m.color }} />
+                  <span className="text-sm font-semibold text-white">{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <label className="eyebrow text-[#6f6690]">Monto</label>
+          <div className="grid grid-cols-4 gap-3 mt-4 mb-4">
+            {quick.map((q) => (
+              <button
+                key={q}
+                data-testid={`quick-${q}`}
+                onClick={() => setAmount(String(q))}
+                className={`py-3 rounded-xl border font-display text-sm font-bold transition-colors duration-200 ${
+                  amount === String(q)
+                    ? "border-[#ff3dbe] text-[#ff3dbe] bg-[#ff3dbe]/10"
+                    : "border-white/10 text-[#d7d1e8] hover:border-white/30"
+                }`}
+              >
+                ${q}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative mb-7">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 font-display text-base text-[#6f6690]">$</span>
+            <Input
+              data-testid="topup-amount-input"
+              type="number"
+              min="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Otro monto"
+              className="h-12 pl-10 rounded-xl bg-[#0b0617] border-white/10 text-white font-display text-base placeholder:text-[#6f6690] placeholder:font-sans focus-visible:ring-1 focus-visible:ring-[#ff3dbe] focus-visible:border-[#ff3dbe]/60"
+            />
+          </div>
+
+          <Button
+            data-testid="topup-submit-btn"
+            onClick={submit}
+            disabled={busy}
+            className="w-full h-12 rounded-full font-semibold text-[#0a0512] bg-[#ff3dbe] hover:bg-[#ff65cc] transition-colors duration-200 shadow-[0_16px_44px_-16px_rgba(255,61,190,0.95)]"
+          >
+            {busy ? <Loader2 className="animate-spin" size={18} /> : "Cargar saldo"}
+          </Button>
+          <p className="text-xs text-[#6f6690] text-center mt-4 flex items-center justify-center gap-1.5">
+            <ShieldCheck size={13} /> Pasarela simulada · el saldo se acredita al instante
+          </p>
+        </div>
       </div>
     </main>
   );

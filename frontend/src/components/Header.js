@@ -22,56 +22,69 @@ export default function Header() {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#050507]/80 border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-5 h-[68px] flex items-center justify-between gap-4">
-        <Link to="/" data-testid="logo-link" className="flex items-center gap-3 shrink-0">
-          <img src={LOGO} alt="INFLOW" className="h-10 w-10 rounded-full object-cover border border-[#ff00ff]/50 glow-magenta" />
-          <span className="font-display text-xl font-black tracking-tight">
-            INFLOW <span className="text-[#ff2ec4] text-glow-pink">MKT</span>
+    <header className="sticky top-0 z-50 glass border-b border-white/10">
+      <div className="max-w-[1220px] mx-auto px-5 h-[72px] flex items-center gap-6">
+        <Link to="/" data-testid="logo-link" className="flex items-center gap-3 shrink-0 group">
+          <span className="relative">
+            <img
+              src={LOGO}
+              alt="INFLOW"
+              className="h-11 w-11 rounded-2xl object-cover ring-1 ring-[#ff3dbe]/50 group-hover:ring-[#2ee6ff]/60 transition-[box-shadow,--tw-ring-color] duration-300"
+            />
+            <span className="absolute -inset-1 rounded-2xl pulse-ring pointer-events-none" />
+          </span>
+          <span className="font-display text-lg font-extrabold tracking-tight leading-none">
+            INFLOW<span className="text-shine"> MKT</span>
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                location.pathname === item.to ? "text-[#ff2ec4] text-glow-pink" : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="hidden lg:flex items-center gap-1 ml-2">
+          {navItems.map((item) => {
+            const active = location.pathname === item.to;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
+                className={`relative px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                  active ? "text-white" : "text-[#a49cbd] hover:text-white"
+                }`}
+              >
+                {item.label}
+                {active && (
+                  <span className="absolute left-4 right-4 -bottom-0.5 h-[2px] rounded-full bg-[#ff3dbe] shadow-[0_0_12px_#ff3dbe]" />
+                )}
+              </Link>
+            );
+          })}
           {user?.role === "admin" && (
             <Link
               to="/admin"
               data-testid="nav-admin"
-              className="px-4 py-2 rounded-full text-sm font-semibold text-[#ff00ff] hover:text-glow-magenta flex items-center gap-1"
+              className="px-4 py-2 text-sm font-medium text-[#9b5cff] hover:text-[#c4a2ff] transition-colors flex items-center gap-1.5"
             >
               <ShieldCheck size={15} /> Admin
             </Link>
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           {user ? (
             <>
               <Link
                 to="/cargar-saldo"
                 data-testid="header-balance"
-                className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border border-[#00e5ff]/40 bg-[#00e5ff]/5 glow-cyan hover:scale-105 transition-transform"
+                className="hidden sm:flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-full border border-[#2ee6ff]/35 bg-[#2ee6ff]/[0.07] hover:bg-[#2ee6ff]/[0.14] transition-colors duration-200"
               >
-                <Wallet size={16} className="text-[#00e5ff]" />
-                <span className="font-display font-bold text-[#00e5ff]">${user.balance?.toFixed(2)}</span>
+                <Wallet size={16} className="text-[#2ee6ff]" />
+                <span className="font-display text-sm font-bold text-[#2ee6ff]">${user.balance?.toFixed(2)}</span>
               </Link>
               <Button
                 data-testid="logout-btn"
                 onClick={() => { logout(); navigate("/"); }}
                 variant="ghost"
                 size="icon"
-                className="text-zinc-400 hover:text-[#ff00ff] hover:bg-transparent"
+                className="rounded-full text-[#a49cbd] hover:text-[#ff3dbe] hover:bg-white/5"
               >
                 <LogOut size={18} />
               </Button>
@@ -80,15 +93,16 @@ export default function Header() {
             <Button
               data-testid="header-login-btn"
               onClick={() => setAuthOpen(true)}
-              className="bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full px-5 hover:scale-105 transition-transform glow-pink"
+              className="rounded-full h-10 px-6 font-semibold text-[#0a0512] bg-[#ff3dbe] hover:bg-[#ff65cc] transition-colors duration-200 shadow-[0_10px_30px_-10px_rgba(255,61,190,0.85)]"
             >
               Entrar
             </Button>
           )}
           <button
-            className="md:hidden text-white"
+            className="lg:hidden text-white p-1"
             data-testid="mobile-menu-toggle"
             onClick={() => setMobileOpen((o) => !o)}
+            aria-label="Menú"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -96,23 +110,25 @@ export default function Header() {
       </div>
 
       {mobileOpen && (
-        <nav className="md:hidden border-t border-white/10 bg-[#0c0c12] px-5 py-4 flex flex-col gap-1">
+        <nav className="lg:hidden border-t border-white/10 bg-[#110a1e] px-5 py-4 flex flex-col gap-1" data-testid="mobile-nav">
           {navItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2.5 rounded-lg text-sm font-semibold text-zinc-300 hover:bg-white/5"
+              className="px-3 py-3 rounded-xl text-sm font-semibold text-[#d7d1e8] hover:bg-white/5 transition-colors"
             >
               {item.label}
             </Link>
           ))}
           {user?.role === "admin" && (
-            <Link to="/admin" onClick={() => setMobileOpen(false)} className="px-3 py-2.5 rounded-lg text-sm font-semibold text-[#ff00ff]">
+            <Link to="/admin" onClick={() => setMobileOpen(false)} className="px-3 py-3 rounded-xl text-sm font-semibold text-[#9b5cff]">
               Admin
             </Link>
           )}
-          {user && <div className="px-3 py-2.5 text-sm text-[#00e5ff] font-bold">Saldo: ${user.balance?.toFixed(2)}</div>}
+          {user && (
+            <div className="px-3 py-3 text-sm font-bold text-[#2ee6ff]">Saldo: ${user.balance?.toFixed(2)}</div>
+          )}
         </nav>
       )}
 

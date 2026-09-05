@@ -6,7 +6,10 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { apiError } from "@/lib/api";
 import { toast } from "sonner";
-import { Zap, Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+
+const inputCls =
+  "h-11 bg-[#0b0617] border-white/10 text-white placeholder:text-[#6f6690] rounded-xl focus-visible:ring-1 focus-visible:ring-[#ff3dbe] focus-visible:border-[#ff3dbe]/60";
 
 export default function AuthDialog({ open, onOpenChange, onSuccess }) {
   const { login, register } = useAuth();
@@ -40,53 +43,58 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="bg-[#0c0c12] border border-[#ff2ec4]/30 text-white sm:max-w-md glow-pink"
+        className="bg-[#110a1e] border border-white/10 text-white sm:max-w-[420px] rounded-[24px] p-7 shadow-[0_40px_120px_-40px_rgba(255,61,190,0.7)]"
         data-testid="auth-dialog"
       >
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-black tracking-tight flex items-center gap-2">
-            <Zap className="text-[#ff2ec4]" size={22} />
+        <DialogHeader className="space-y-2">
+          <span className="h-11 w-11 rounded-2xl bg-[#ff3dbe]/15 border border-[#ff3dbe]/40 flex items-center justify-center">
+            <Sparkles size={19} className="text-[#ff3dbe]" />
+          </span>
+          <DialogTitle className="font-display text-xl font-extrabold tracking-tight pt-2">
             {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
           </DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">
-            {mode === "login" ? "Accede a tu billetera INFLOW MKT." : "Regístrate y empieza a comprar en segundos."}
+          <DialogDescription className="text-sm text-[#a49cbd]">
+            {mode === "login"
+              ? "Accede a tu billetera INFLOW MKT."
+              : "Regístrate y empieza a comprar en segundos."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4 pt-2">
+
+        <form onSubmit={submit} className="space-y-4 pt-3">
           {mode === "register" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-widest text-zinc-500">Nombre</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6f6690]">Nombre</Label>
               <Input
                 data-testid="auth-name-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]"
+                className={inputCls}
                 placeholder="Tu nombre"
               />
             </div>
           )}
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-zinc-500">Email</Label>
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6f6690]">Email</Label>
             <Input
               data-testid="auth-email-input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]"
+              className={inputCls}
               placeholder="tu@email.com"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-zinc-500">Contraseña</Label>
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6f6690]">Contraseña</Label>
             <Input
               data-testid="auth-password-input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-black/40 border-white/10 text-white focus-visible:ring-[#ff2ec4]"
+              className={inputCls}
               placeholder="••••••••"
             />
           </div>
@@ -94,17 +102,18 @@ export default function AuthDialog({ open, onOpenChange, onSuccess }) {
             data-testid="auth-submit-btn"
             type="submit"
             disabled={busy}
-            className="w-full bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full h-11 hover:scale-[1.02] transition-transform glow-pink"
+            className="w-full h-11 rounded-full font-semibold text-[#0a0512] bg-[#ff3dbe] hover:bg-[#ff65cc] transition-colors duration-200"
           >
             {busy ? <Loader2 className="animate-spin" size={18} /> : mode === "login" ? "Entrar" : "Registrarme"}
           </Button>
         </form>
-        <div className="text-center text-sm text-zinc-400 pt-1">
+
+        <div className="text-center text-sm text-[#a49cbd] pt-1">
           {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
           <button
             data-testid="auth-toggle-mode"
             onClick={() => setMode(mode === "login" ? "register" : "login")}
-            className="text-[#00e5ff] hover:text-glow-cyan font-semibold"
+            className="text-[#2ee6ff] hover:text-[#7ff0ff] font-semibold transition-colors"
           >
             {mode === "login" ? "Regístrate" : "Inicia sesión"}
           </button>

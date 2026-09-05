@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, resolveImage } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import AuthDialog from "@/components/AuthDialog";
-import { Wallet, Plus, History, ArrowDownRight, ArrowUpRight, Loader2, Lock } from "lucide-react";
+import { Wallet, Plus, History, ArrowDownLeft, ArrowUpRight, Loader2, Lock, ShoppingBag } from "lucide-react";
 
 export default function Account() {
   const { user, loading } = useAuth();
@@ -30,105 +30,142 @@ export default function Account() {
   if (loading) {
     return (
       <div className="flex justify-center py-32">
-        <Loader2 className="animate-spin text-[#ff2ec4]" size={32} />
+        <Loader2 className="animate-spin text-[#ff3dbe]" size={30} />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <main className="max-w-md mx-auto px-5 py-32 text-center min-h-[60vh]">
-        <Lock size={40} className="mx-auto text-[#ff00ff] mb-4" />
-        <h1 className="font-display text-2xl font-black mb-2">Inicia sesión</h1>
-        <p className="text-zinc-400 mb-6">Accede a tu cuenta para ver tu saldo e historial.</p>
-        <Button
-          data-testid="account-login-btn"
-          onClick={() => setAuthOpen(true)}
-          className="bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full px-6 glow-pink"
-        >
-          Entrar
-        </Button>
+      <main className="max-w-md mx-auto px-5 py-32 min-h-[60vh]">
+        <div className="panel rounded-[24px] p-8 text-center">
+          <span className="h-12 w-12 rounded-2xl bg-[#9b5cff]/15 border border-[#9b5cff]/40 flex items-center justify-center mx-auto">
+            <Lock size={20} className="text-[#9b5cff]" />
+          </span>
+          <h1 className="font-display text-xl font-extrabold mt-6">Inicia sesión</h1>
+          <p className="text-base text-[#a49cbd] mt-3">Accede a tu cuenta para ver tu saldo e historial.</p>
+          <Button
+            data-testid="account-login-btn"
+            onClick={() => setAuthOpen(true)}
+            className="mt-7 rounded-full h-11 px-7 font-semibold text-[#0a0512] bg-[#ff3dbe] hover:bg-[#ff65cc] transition-colors"
+          >
+            Entrar
+          </Button>
+        </div>
         <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
       </main>
     );
   }
 
-  return (
-    <main className="max-w-5xl mx-auto px-5 py-14 min-h-[70vh]">
-      <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#00e5ff]">Mi Cuenta</span>
-      <h1 className="font-display text-4xl font-black tracking-tight mt-2 mb-8">Hola, {user.name} 👋</h1>
+  const purchases = txs.filter((t) => t.type === "purchase").length;
+  const loaded = txs.filter((t) => t.type !== "purchase").reduce((s, t) => s + Math.abs(t.amount), 0);
 
-      {/* Balance card */}
-      <div className="relative overflow-hidden rounded-2xl p-8 bg-[#0c0c12] border border-[#ff2ec4]/30 glow-pink mb-10">
-        <div className="absolute inset-0 radial-cyan opacity-40" />
-        <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-zinc-400 text-sm uppercase tracking-widest">
-              <Wallet size={16} /> Saldo disponible
-            </div>
-            <div className="font-display text-6xl font-black text-[#ff2ec4] text-glow-pink mt-3" data-testid="account-balance">
-              ${user.balance?.toFixed(2)}
+  return (
+    <main className="relative overflow-hidden min-h-[80vh]">
+      <div className="absolute inset-x-0 top-0 h-[380px] aurora-violet" />
+      <div className="relative max-w-[1000px] mx-auto px-5 py-16 lg:py-20">
+        <span className="eyebrow text-[#2ee6ff]">Mi cuenta</span>
+        <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tighter mt-4">
+          Hola, {user.name}
+        </h1>
+
+        <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 mt-10">
+          {/* Balance */}
+          <div className="relative overflow-hidden rounded-[26px] panel p-8 grain">
+            <div className="absolute inset-0 aurora-fuchsia" />
+            <div className="relative">
+              <div className="flex items-center gap-2 eyebrow text-[#a49cbd]">
+                <Wallet size={14} /> Saldo disponible
+              </div>
+              <div
+                className="font-display text-5xl sm:text-6xl font-extrabold tracking-tighter mt-5 text-shine"
+                data-testid="account-balance"
+              >
+                ${user.balance?.toFixed(2)}
+              </div>
+              <div className="flex flex-wrap gap-3 mt-8">
+                <Button
+                  data-testid="account-topup-btn"
+                  onClick={() => navigate("/cargar-saldo")}
+                  className="rounded-full h-11 px-6 font-semibold text-[#0a0512] bg-[#2ee6ff] hover:bg-[#66eeff] transition-colors"
+                >
+                  <Plus size={17} className="mr-1.5" /> Cargar saldo
+                </Button>
+                <Button
+                  data-testid="account-shop-btn"
+                  onClick={() => navigate("/productos")}
+                  variant="outline"
+                  className="rounded-full h-11 px-6 font-semibold bg-transparent border-white/15 text-white hover:bg-white/5 hover:text-white transition-colors"
+                >
+                  <ShoppingBag size={16} className="mr-2" /> Comprar
+                </Button>
+              </div>
             </div>
           </div>
-          <Button
-            data-testid="account-topup-btn"
-            onClick={() => navigate("/cargar-saldo")}
-            className="bg-[#00e5ff] hover:bg-[#00e5ff] text-black font-bold rounded-full px-6 h-12 hover:scale-105 transition-transform glow-cyan"
-          >
-            <Plus size={18} className="mr-1" /> Cargar saldo
-          </Button>
-        </div>
-      </div>
 
-      {/* History */}
-      <div className="flex items-center gap-2 mb-5">
-        <History size={20} className="text-[#ff00ff]" />
-        <h2 className="font-display text-2xl font-bold">Historial de movimientos</h2>
-      </div>
-
-      {txLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-[#ff2ec4]" size={28} />
+          {/* Mini stats */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-6">
+            <div className="panel rounded-[22px] p-6" data-testid="stat-purchases">
+              <div className="eyebrow text-[#6f6690]">Compras</div>
+              <div className="font-display text-3xl font-extrabold mt-3 text-white">{purchases}</div>
+            </div>
+            <div className="panel rounded-[22px] p-6" data-testid="stat-loaded">
+              <div className="eyebrow text-[#6f6690]">Total cargado</div>
+              <div className="font-display text-3xl font-extrabold mt-3 text-[#2ee6ff]">${loaded.toFixed(2)}</div>
+            </div>
+          </div>
         </div>
-      ) : txs.length === 0 ? (
-        <p className="text-zinc-500 py-10 text-center">Todavía no tienes movimientos.</p>
-      ) : (
-        <div className="space-y-3" data-testid="transactions-list">
-          {txs.map((t) => {
-            const isPurchase = t.type === "purchase";
-            return (
-              <div
-                key={t.id}
-                className="flex items-center gap-4 p-4 rounded-xl bg-[#12121a] border border-white/10 hover:border-white/20 transition-colors"
-                data-testid="transaction-row"
-              >
+
+        {/* History */}
+        <div className="flex items-center gap-2.5 mt-16 mb-6">
+          <History size={18} className="text-[#ff3dbe]" />
+          <h2 className="font-display text-lg font-bold">Historial de movimientos</h2>
+        </div>
+
+        {txLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="animate-spin text-[#ff3dbe]" size={26} />
+          </div>
+        ) : txs.length === 0 ? (
+          <div className="panel rounded-[22px] p-10 text-center text-[#6f6690]" data-testid="no-transactions">
+            Todavía no tienes movimientos.
+          </div>
+        ) : (
+          <div className="panel rounded-[22px] divide-y divide-white/[0.06] overflow-hidden" data-testid="transactions-list">
+            {txs.map((t) => {
+              const isPurchase = t.type === "purchase";
+              const color = isPurchase ? "#ff3dbe" : "#2ee6ff";
+              return (
                 <div
-                  className="h-11 w-11 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: isPurchase ? "rgba(255,0,255,0.12)" : "rgba(0,255,157,0.12)" }}
+                  key={t.id}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors"
+                  data-testid="transaction-row"
                 >
-                  {isPurchase ? (
-                    <ArrowUpRight size={20} className="text-[#ff00ff]" />
-                  ) : (
-                    <ArrowDownRight size={20} className="text-[#ff2ec4]" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white truncate">{t.description}</div>
-                  <div className="text-xs text-zinc-500">
-                    {new Date(t.created_at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
+                  <span
+                    className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${color}1f`, border: `1px solid ${color}44` }}
+                  >
+                    {isPurchase ? (
+                      <ArrowUpRight size={18} style={{ color }} />
+                    ) : (
+                      <ArrowDownLeft size={18} style={{ color }} />
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white truncate">{t.description}</div>
+                    <div className="text-xs text-[#6f6690] mt-0.5">
+                      {new Date(t.created_at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
+                    </div>
+                  </div>
+                  <div className="font-display text-base font-extrabold shrink-0" style={{ color }}>
+                    {isPurchase ? "−" : "+"}${Math.abs(t.amount).toFixed(2)}
                   </div>
                 </div>
-                <div
-                  className="font-display font-bold text-lg shrink-0"
-                  style={{ color: isPurchase ? "#ff00ff" : "#ff2ec4" }}
-                >
-                  {isPurchase ? "-" : "+"}${Math.abs(t.amount).toFixed(2)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

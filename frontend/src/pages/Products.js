@@ -3,7 +3,7 @@ import ProductCard from "@/components/ProductCard";
 import AuthDialog from "@/components/AuthDialog";
 import { Input } from "@/components/ui/input";
 import { useBuy, useProducts } from "@/hooks/useShop";
-import { Loader2, PackageOpen, Search } from "lucide-react";
+import { Loader2, PackageOpen, Search, X } from "lucide-react";
 
 export default function Products() {
   const { products, loading, load } = useProducts();
@@ -31,58 +31,85 @@ export default function Products() {
   }, [products, query, category]);
 
   return (
-    <main className="max-w-7xl mx-auto px-5 py-14 min-h-[70vh]">
-      <div className="mb-8">
-        <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#ff2ec4]">Catálogo</span>
-        <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">Todos los productos</h1>
-      </div>
+    <main className="relative overflow-hidden min-h-[80vh]">
+      <div className="absolute inset-x-0 top-0 h-[420px] aurora-violet" />
 
-      {/* Search */}
-      <div className="relative mb-5 max-w-md">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-        <Input
-          data-testid="product-search-input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar productos..."
-          className="bg-black/40 border-white/10 text-white h-12 pl-11 rounded-full focus-visible:ring-[#ff2ec4]"
-        />
-      </div>
+      <div className="relative max-w-[1220px] mx-auto px-5 py-16 lg:py-20">
+        <span className="eyebrow text-[#ff8de0]">Catálogo</span>
+        <h1 className="font-display text-4xl sm:text-5xl font-extrabold tracking-tighter mt-4 max-w-xl leading-[1.05]">
+          Elige tu <span className="text-shine">impulso</span>
+        </h1>
+        <p className="text-base text-[#a49cbd] mt-5 max-w-md leading-relaxed">
+          Busca por nombre o filtra por red social. Se descuenta de tu saldo al instante.
+        </p>
 
-      {/* Category chips */}
-      <div className="flex flex-wrap gap-2 mb-10" data-testid="category-filters">
-        {categories.map((c) => (
-          <button
-            key={c}
-            data-testid={`category-chip-${c}`}
-            onClick={() => setCategory(c)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${
-              category === c
-                ? "border-[#ff2ec4] text-[#ff2ec4] bg-[#ff2ec4]/10 glow-pink"
-                : "border-white/10 text-zinc-400 hover:border-white/30 hover:text-white"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
+        {/* Search + filters */}
+        <div className="mt-12 flex flex-col lg:flex-row lg:items-center gap-5">
+          <div className="relative w-full lg:max-w-sm">
+            <Search size={17} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#6f6690]" />
+            <Input
+              data-testid="product-search-input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar paquetes…"
+              className="h-12 pl-12 pr-11 rounded-full bg-[#110a1e] border-white/10 text-white placeholder:text-[#6f6690] focus-visible:ring-1 focus-visible:ring-[#ff3dbe] focus-visible:border-[#ff3dbe]/60"
+            />
+            {query && (
+              <button
+                data-testid="clear-search-btn"
+                onClick={() => setQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6f6690] hover:text-white transition-colors"
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
 
-      {loading ? (
-        <div className="flex justify-center py-24">
-          <Loader2 className="animate-spin text-[#ff2ec4]" size={32} />
+          <div className="flex flex-wrap gap-2.5 lg:ml-auto" data-testid="category-filters">
+            {categories.map((c) => {
+              const active = category === c;
+              return (
+                <button
+                  key={c}
+                  data-testid={`category-chip-${c}`}
+                  onClick={() => setCategory(c)}
+                  className={`px-4 py-2.5 rounded-full text-sm font-semibold border transition-colors duration-200 ${
+                    active
+                      ? "bg-[#ff3dbe] border-[#ff3dbe] text-[#0a0512]"
+                      : "bg-white/[0.04] border-white/10 text-[#a49cbd] hover:text-white hover:border-white/25"
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center py-24 text-zinc-500" data-testid="no-products">
-          <PackageOpen size={48} className="mb-4" />
-          <p>No se encontraron productos.</p>
+
+        <div className="mt-6 text-sm text-[#6f6690]" data-testid="results-count">
+          {loading ? "Cargando paquetes…" : `${filtered.length} ${filtered.length === 1 ? "paquete" : "paquetes"}`}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="products-grid">
-          {filtered.map((p, i) => (
-            <ProductCard key={p.id} product={p} onBuy={buy} index={i} />
-          ))}
+
+        <div className="mt-8">
+          {loading ? (
+            <div className="flex justify-center py-28">
+              <Loader2 className="animate-spin text-[#ff3dbe]" size={30} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center py-28 text-[#6f6690]" data-testid="no-products">
+              <PackageOpen size={44} className="mb-5" />
+              <p className="text-base">No encontramos paquetes con ese filtro.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="products-grid">
+              {filtered.map((p, i) => (
+                <ProductCard key={p.id} product={p} onBuy={buy} index={i} />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </main>

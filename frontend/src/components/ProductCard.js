@@ -3,8 +3,16 @@ import { resolveImage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2 } from "lucide-react";
 
+const CAT_COLOR = {
+  Instagram: "#ff3dbe",
+  TikTok: "#2ee6ff",
+  YouTube: "#ff5f6d",
+  Combos: "#9b5cff",
+};
+
 export default function ProductCard({ product, onBuy, index = 0 }) {
   const [busy, setBusy] = useState(false);
+  const accent = CAT_COLOR[product.category] || "#9b5cff";
 
   const handle = async () => {
     setBusy(true);
@@ -16,38 +24,55 @@ export default function ProductCard({ product, onBuy, index = 0 }) {
   };
 
   return (
-    <div
+    <article
       data-testid={`product-card-${product.id}`}
-      className="group rounded-xl overflow-hidden bg-[#12121a] border border-white/10 hover:border-[#ff2ec4]/60 hover:-translate-y-1 transition-all duration-300 flex flex-col fade-up"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="group relative rounded-[22px] overflow-hidden panel flex flex-col hover:-translate-y-2 transition-[transform,border-color] duration-300 fade-up"
+      style={{ animationDelay: `${index * 70}ms` }}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-black">
+      <div className="relative aspect-[5/4] overflow-hidden bg-[#0b0617]">
         <img
           src={resolveImage(product.image_url)}
           alt={product.name}
-          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-[1.06] transition-[opacity,transform] duration-700"
         />
-        <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur border border-[#00e5ff]/40">
-          <span className="font-display font-bold text-[#00e5ff] text-sm">${product.price.toFixed(2)}</span>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#110a1e] via-transparent to-transparent" />
         {product.category && (
-          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur border border-[#b026ff]/50">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-[#b026ff]">{product.category}</span>
-          </div>
+          <span
+            className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] glass"
+            style={{ color: accent, borderColor: `${accent}55` }}
+            data-testid={`product-category-${product.id}`}
+          >
+            {product.category}
+          </span>
         )}
       </div>
-      <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-display font-bold text-lg text-white">{product.name}</h3>
-        <p className="text-sm text-zinc-400 mt-1 line-clamp-2 flex-1">{product.description}</p>
-        <Button
-          data-testid={`buy-btn-${product.id}`}
-          onClick={handle}
-          disabled={busy}
-          className="mt-4 w-full bg-[#ff2ec4] hover:bg-[#ff2ec4] text-black font-bold rounded-full hover:scale-[1.03] transition-transform group-hover:glow-pink"
-        >
-          {busy ? <Loader2 className="animate-spin" size={18} /> : <><ShoppingCart size={16} className="mr-2" /> Comprar</>}
-        </Button>
+
+      <div className="p-6 flex flex-col flex-1">
+        <h3 className="font-display text-base font-bold text-white leading-snug">{product.name}</h3>
+        <p className="text-sm text-[#a49cbd] mt-2.5 line-clamp-2 flex-1 leading-relaxed">{product.description}</p>
+
+        <div className="flex items-end justify-between mt-6 gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.24em] text-[#6f6690] font-semibold">Precio</div>
+            <div className="font-display text-2xl font-extrabold text-white mt-1" data-testid={`product-price-${product.id}`}>
+              ${product.price.toFixed(2)}
+            </div>
+          </div>
+          <Button
+            data-testid={`buy-btn-${product.id}`}
+            onClick={handle}
+            disabled={busy}
+            className="rounded-full h-11 px-5 font-semibold text-[#0a0512] bg-white hover:bg-[#ff3dbe] transition-colors duration-200 shrink-0"
+          >
+            {busy ? <Loader2 className="animate-spin" size={18} /> : <><ShoppingCart size={16} className="mr-2" /> Comprar</>}
+          </Button>
+        </div>
       </div>
-    </div>
+
+      <span
+        className="absolute inset-x-0 bottom-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+      />
+    </article>
   );
 }

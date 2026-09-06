@@ -96,7 +96,7 @@
     "tailwindcss": "3.4.17"
   },
   "resolutions": {
-    "react-day-picker": "9.0.0"
+    "react-day-picker": "9.0.0",
     "react-router": "7.15.1",
     "node-forge": "1.4.0",
     "fast-uri": "3.1.2",

@@ -14,6 +14,9 @@ import Referrals from "@/pages/Referrals";
 function App() {
   return (
     <div className="App">
+    <h1 style={{ color: "#0f0", position: "fixed", top: 60, left: 10, zIndex: 99999 }}>
+        APP RENDER OK
+      </h1>
       <AuthProvider>
         <BrowserRouter>
           <Header />

@@ -46,7 +46,6 @@
     "lucide-react": "0.516.0",
     "next-themes": "0.4.6",
     "react": "19.0.0",
-    "react-day-picker": "8.10.1",
     "react-dom": "19.0.0",
     "react-fast-marquee": "^1.6.5",
     "react-hook-form": "7.56.2",
@@ -97,6 +96,7 @@
     "tailwindcss": "3.4.17"
   },
   "resolutions": {
+    "react-day-picker": "9.0.0"
     "react-router": "7.15.1",
     "node-forge": "1.4.0",
     "fast-uri": "3.1.2",

@@ -114,8 +114,8 @@ def serialize_user(user: dict) -> dict:
 
 
 # ---------------- Referrals & coupons config ----------------
-REFERRAL_WELCOME_BONUS = 5.0
-REFERRAL_COMMISSION_PERCENT = 10.0
+REFERRAL_WELCOME_BONUS = 3.0
+REFERRAL_COMMISSION_PERCENT = 15.0
 SCOPE_LABELS = {"purchase": "compras", "topup": "cargas de saldo", "both": "compras y cargas"}
 
 
@@ -170,6 +170,11 @@ class TopUpInput(BaseModel):
 
 class PurchaseInput(BaseModel):
     coupon_code: Optional[str] = None
+    target_username: Optional[str] = None
+    quantity: Optional[int] = None
+    platform: Optional[str] = None
+    service_type: Optional[str] = None
+    currency: Optional[str] = "ARS"
 
 
 class CouponInput(BaseModel):
@@ -351,20 +356,55 @@ async def purchase(product_id: str, data: Optional[PurchaseInput] = None, user: 
     product = await db.products.find_one({"_id": ObjectId(product_id), "is_deleted": {"$ne": True}})
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # Calcular precio según pack o precio fijo del producto
     price = float(product["price"])
+    pack_price = None
+    
+    # Si viene con datos de pack, calcular precio dinámico
+    if data and data.quantity and data.platform and data.service_type:
+        # Precios base por plataforma y servicio (ARS por unidad)
+        BASE_PRICES = {
+            "instagram": {"seguidores": 29.6, "likes": 5.9, "views": 2.9, "reels": 8.9, "guardados": 12.9, "shares": 9.9},
+            "youtube": {"suscriptores": 45.0, "views": 3.5, "likes": 6.5, "horas": 15.0},
+            "tiktok": {"seguidores": 25.0, "views": 2.5, "likes": 5.5, "shares": 8.5},
+            "facebook": {"seguidores": 22.0, "likes": 5.0, "views": 2.0, "shares": 7.5},
+            "spotify": {"seguidores": 35.0, "streams": 4.5, "saves": 10.0},
+        }
+        
+        # Descuentos por cantidad (igual que el frontend)
+        DISCOUNTS = {
+            100: 15, 250: 22, 500: 30, 1000: 40, 1500: 48, 2000: 55, 2500: 60, 5000: 65,
+        }
+        
+        platform_lower = data.platform.lower()
+        service_lower = data.service_type.lower()
+        
+        if platform_lower in BASE_PRICES and service_lower in BASE_PRICES[platform_lower]:
+            base_price_per_unit = BASE_PRICES[platform_lower][service_lower]
+            list_price = base_price_per_unit * data.quantity
+            discount_percent = DISCOUNTS.get(data.quantity, 0)
+            pack_price = round(list_price * (1 - discount_percent / 100), 2)
+            price = pack_price
+    
     coupon = None
     discount = 0.0
     if data and data.coupon_code:
         coupon = await get_valid_coupon(data.coupon_code, "purchase", user["_id"])
         discount = round(price * coupon["percent"] / 100, 2)
+    
     total = round(price - discount, 2)
     uid = ObjectId(user["_id"])
     current = await db.users.find_one({"_id": uid})
+    
     if current["balance"] < total:
         raise HTTPException(status_code=400, detail="Saldo insuficiente. Carga saldo para completar tu compra.")
+    
     now = datetime.now(timezone.utc).isoformat()
     await db.users.update_one({"_id": uid}, {"$inc": {"balance": -total}})
-    await db.transactions.insert_one({
+    
+    # Crear transacción con datos del pack si existen
+    transaction_doc = {
         "user_id": user["_id"],
         "type": "purchase",
         "amount": -total,
@@ -372,7 +412,19 @@ async def purchase(product_id: str, data: Optional[PurchaseInput] = None, user: 
         "product_image": product["image_url"],
         "description": f"Compra: {product['name']}" + (f" · cupón {coupon['code']} -{coupon['percent']:g}%" if coupon else ""),
         "created_at": now,
-    })
+    }
+    
+    # Agregar datos del pack si existen
+    if data and data.target_username and data.quantity and data.platform and data.service_type:
+        transaction_doc["target_username"] = data.target_username
+        transaction_doc["quantity"] = data.quantity
+        transaction_doc["platform"] = data.platform
+        transaction_doc["service_type"] = data.service_type
+        transaction_doc["pack_price"] = pack_price
+        transaction_doc["description"] = f"Compra: {data.quantity} {data.service_type} en {data.platform} para @{data.target_username}" + (f" · cupón {coupon['code']} -{coupon['percent']:g}%" if coupon else "")
+    
+    await db.transactions.insert_one(transaction_doc)
+    
     if coupon:
         await db.coupon_redemptions.insert_one({
             "code": coupon["code"],
@@ -381,6 +433,40 @@ async def purchase(product_id: str, data: Optional[PurchaseInput] = None, user: 
             "amount_saved": discount,
             "created_at": now,
         })
+
+    # referral commission for the inviter
+    referrer_id = current.get("referred_by")
+    commission = round(total * REFERRAL_COMMISSION_PERCENT / 100, 2) if referrer_id else 0.0
+    if referrer_id and commission > 0 and ObjectId.is_valid(referrer_id) and referrer_id != user["_id"]:
+        await db.users.update_one({"_id": ObjectId(referrer_id)}, {"$inc": {"balance": commission}})
+        await db.transactions.insert_one({
+            "user_id": referrer_id,
+            "type": "referral",
+            "amount": commission,
+            "description": f"Comisión por referido: {current.get('name', '')}",
+            "created_at": now,
+        })
+        await db.referral_events.insert_one({
+            "referrer_id": referrer_id,
+            "referred_id": user["_id"],
+            "referred_name": current.get("name", ""),
+            "type": "commission",
+            "amount": commission,
+            "created_at": now,
+        })
+
+    updated = await db.users.find_one({"_id": uid})
+    return {
+        "balance": round(updated["balance"], 2),
+        "product": product["name"],
+        "price": price,
+        "discount": discount,
+        "total": total,
+        "quantity": data.quantity if data else None,
+        "platform": data.platform if data else None,
+        "service_type": data.service_type if data else None,
+        "target_username": data.target_username if data else None,
+    }
 
     # referral commission for the inviter
     referrer_id = current.get("referred_by")

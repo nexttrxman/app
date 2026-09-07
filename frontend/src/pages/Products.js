@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { usePurchaseGate, useProducts } from "@/hooks/useShop";
 import { Loader2, PackageOpen, Search, X } from "lucide-react";
 import { PackWizard } from "@/components/PackWizard";
+import { toast } from "sonner";
 
 export default function Products() {
   const { products, loading, load } = useProducts();
@@ -48,51 +49,52 @@ export default function Products() {
     return "seguidores";
   }
 
- const handlePackWizardContinue = useCallback(async ({ username, pack, currency, platform, serviceType }) => {
-  setPackWizardOpen(false);
-  setPackWizardConfig(null);
-  
-  try {
-    const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
-    const token = localStorage.getItem("token"); // o como lo tengas guardado
-    
-    const res = await fetch(`${API_URL}/api/wallet/purchase/${packWizardConfig.product.id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        target_username: username,
-        quantity: pack.qty,
-        platform: platform,
-        service_type: serviceType,
-        currency: currency,
-      }),
-    });
-    
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || "Error en la compra");
+  const handlePackWizardContinue = useCallback(async ({ username, pack, currency, platform, serviceType }) => {
+    if (!packWizardConfig?.product) {
+      alert("Error: no hay producto seleccionado");
+      return;
     }
     
-    const result = await res.json();
-    alert(`Compra exitosa: ${pack.qty} ${serviceType} para @${username} - Total: $${result.total}`);
-    // Recargar página o actualizar saldo
-    window.location.reload();
-  } catch (err) {
-    alert(err.message);
-  }
-}, [packWizardConfig]);
+    setPackWizardOpen(false);
+    setPackWizardConfig(null);
+    
+    try {
+      const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+      
+      const res = await fetch(`${API_URL}/api/wallet/purchase/${packWizardConfig.product.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          target_username: username,
+          quantity: pack.qty,
+          platform: platform,
+          service_type: serviceType,
+          currency: currency,
+        }),
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || "Error en la compra");
+      }
+      
+      const result = await res.json();
+      alert(`Compra exitosa: ${pack.qty} ${serviceType} para @${username} - Total: $${result.total}`);
+      window.location.reload();
+    } catch (err) {
+      alert(err.message);
+    }
+  }, [packWizardConfig]);
 
   const requestWithPack = useCallback(
     (product) => {
       if (!products) {
         toast.info("Inicia sesión para comprar");
-        openAuth && openAuth();
         return;
       }
-      // Si es Instagram, YouTube, TikTok, Facebook o Spotify, abrir PackWizard
       if (["Instagram", "YouTube", "TikTok", "Facebook", "Spotify"].includes(product.category)) {
         setPackWizardConfig({
           platform: product.category.toLowerCase(),
@@ -104,7 +106,7 @@ export default function Products() {
         buy(product);
       }
     },
-    [buy]
+    [buy, products]
   );
 
   return (

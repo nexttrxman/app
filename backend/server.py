@@ -26,7 +26,6 @@ db = client[os.environ['DB_NAME']]
 
 # ---------------- Cloudinary ----------------
 cloudinary.config(url=os.environ.get('CLOUDINARY_URL'))
-)
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")

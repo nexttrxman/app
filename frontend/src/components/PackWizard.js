@@ -192,7 +192,7 @@ export function PackWizard({ platform = "instagram", serviceType = "seguidores",
                               <span className="text-[11px] text-[#5c5668]">{serviceConfig.label.toLowerCase()}</span>
                             </div>
                             <div className="mt-0.5 flex items-center gap-1.5">
-                              <span className="text-[10px] font-mono font-bold text-[#e1306c]">−{item.discount}%</span>
+                              <span className="text-[10px] font-mono font-bold text-[#e1306c">−{item.discount}%</span>
                               {item.bestPrice && <span className="text-[9px] font-mono font-bold text-[#1a1523]">MEJOR PRECIO</span>}
                               {item.bestseller && <span className="text-[9px] font-mono font-bold text-[#8b8494]">MAS VENDIDO</span>}
                             </div>

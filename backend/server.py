@@ -105,7 +105,7 @@ def set_auth_cookie(response: Response, token: str):
         value=token,
         httponly=True,
         secure=secure,
-        samesite="lax",
+        samesite="none",
         max_age=7 * 24 * 60 * 60,
         path="/",
     )
@@ -156,8 +156,8 @@ def serialize_user(user: dict) -> dict:
 
 
 # ---------------- Referrals & coupons config ----------------
-REFERRAL_WELCOME_BONUS = 5.0
-REFERRAL_COMMISSION_PERCENT = 10.0
+REFERRAL_WELCOME_BONUS = 3.0
+REFERRAL_COMMISSION_PERCENT = 20.0
 SCOPE_LABELS = {"purchase": "compras", "topup": "cargas de saldo", "both": "compras y cargas"}
 
 

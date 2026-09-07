@@ -27,32 +27,35 @@ export function AuthProvider({ children }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = async (email, password) => {
-    const { data } = await api.post("/auth/login", { email, password });
-    setUser(data.user);
-    return data.user;
-  };
+const login = async (email, password) => {
+  const { data } = await api.post("/auth/login", { email, password });
+  localStorage.setItem("access_token", data.token);
+  setUser(data.user);
+  return data.user;
+};
 
-  const register = async (name, email, password, referralCode) => {
-    const { data } = await api.post("/auth/register", {
-      name,
-      email,
-      password,
-      referral_code: referralCode || null,
-    });
-    localStorage.removeItem("inflow_ref");
-    setUser(data.user);
-    return data.user;
-  };
+const register = async (name, email, password, referralCode) => {
+  const { data } = await api.post("/auth/register", {
+    name,
+    email,
+    password,
+    referral_code: referralCode || null,
+  });
+  localStorage.setItem("access_token", data.token);
+  localStorage.removeItem("inflow_ref");
+  setUser(data.user);
+  return data.user;
+};
 
-  const logout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch (e) {
-      // no-op
-    }
-    setUser(false);
-  };
+const logout = async () => {
+  try {
+    await api.post("/auth/logout");
+  } catch (e) {
+    // no-op
+  }
+  localStorage.removeItem("access_token");
+  setUser(false);
+};
 
   const setBalance = (balance) => {
     setUser((u) => (u ? { ...u, balance } : u));

@@ -48,12 +48,42 @@ export default function Products() {
     return "seguidores";
   }
 
-  const handlePackWizardContinue = useCallback(({ username, pack, currency, platform, serviceType }) => {
-    setPackWizardOpen(false);
-    setPackWizardConfig(null);
-    // ACA: llamar a tu backend para crear el pedido con estos datos
-    alert(`Pedido: @${username} - ${pack.qty} ${serviceType} en ${platform} (${currency})`);
-  }, []);
+ const handlePackWizardContinue = useCallback(async ({ username, pack, currency, platform, serviceType }) => {
+  setPackWizardOpen(false);
+  setPackWizardConfig(null);
+  
+  try {
+    const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+    const token = localStorage.getItem("token"); // o como lo tengas guardado
+    
+    const res = await fetch(`${API_URL}/api/wallet/purchase/${packWizardConfig.product.id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        target_username: username,
+        quantity: pack.qty,
+        platform: platform,
+        service_type: serviceType,
+        currency: currency,
+      }),
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail || "Error en la compra");
+    }
+    
+    const result = await res.json();
+    alert(`Compra exitosa: ${pack.qty} ${serviceType} para @${username} - Total: $${result.total}`);
+    // Recargar página o actualizar saldo
+    window.location.reload();
+  } catch (err) {
+    alert(err.message);
+  }
+}, [packWizardConfig]);
 
   const requestWithPack = useCallback(
     (product) => {

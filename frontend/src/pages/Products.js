@@ -5,7 +5,7 @@ import PurchaseDialog from "@/components/PurchaseDialog";
 import { Input } from "@/components/ui/input";
 import { usePurchaseGate, useProducts } from "@/hooks/useShop";
 import { Loader2, PackageOpen, Search, X } from "lucide-react";
-import { PackWizard } from "@/components/PackWizard";
+import PackWizard from "@/components/PackWizard";
 import { toast } from "sonner";
 
 export default function Products() {

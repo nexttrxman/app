@@ -88,7 +88,7 @@ function computePrice(pack, serviceConfig, currency) {
   };
 }
 
-export function PackWizard({ platform = "instagram", serviceType = "seguidores", packs = DEFAULT_PACKS, onContinue, onClose }) {
+function PackWizard({ platform = "instagram", serviceType = "seguidores", packs = DEFAULT_PACKS, onContinue, onClose }) {
   const [username, setUsername] = useState("");
   const [currency, setCurrency] = useState("ARS");
   const [index, setIndex] = useState(7);
@@ -257,3 +257,5 @@ export function PackWizard({ platform = "instagram", serviceType = "seguidores",
     </div>
   );
 }
+
+export default PackWizard;

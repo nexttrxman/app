@@ -16,58 +16,20 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import bcrypt
 import jwt
-import requests
-
-# ---------------- Storage ----------------
-STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
-STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
-APP_NAME = "inflowmkt"
-storage_key = None
-
-
-def init_storage(force: bool = False):
-    global storage_key
-    if storage_key and not force:
-        return storage_key
-    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
-    resp.raise_for_status()
-    storage_key = resp.json()["storage_key"]
-    return storage_key
-
-
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data, timeout=120,
-    )
-    if resp.status_code == 404:
-        key = init_storage(force=True)
-        resp = requests.put(
-            f"{STORAGE_URL}/objects/{path}",
-            headers={"X-Storage-Key": key, "Content-Type": content_type},
-            data=data, timeout=120,
-        )
-    resp.raise_for_status()
-    return resp.json()
-
-
-def get_object(path: str):
-    key = init_storage()
-    resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
-    if resp.status_code == 404:
-        key = init_storage(force=True)
-        resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
-
+import cloudinary
+import cloudinary.uploader
 
 # ---------------- DB ----------------
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# ---------------- Cloudinary ----------------
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+)
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -156,8 +118,8 @@ def serialize_user(user: dict) -> dict:
 
 
 # ---------------- Referrals & coupons config ----------------
-REFERRAL_WELCOME_BONUS = 3.0
-REFERRAL_COMMISSION_PERCENT = 20.0
+REFERRAL_WELCOME_BONUS = 5.0
+REFERRAL_COMMISSION_PERCENT = 10.0
 SCOPE_LABELS = {"purchase": "compras", "topup": "cargas de saldo", "both": "compras y cargas"}
 
 
@@ -334,27 +296,17 @@ async def delete_product(product_id: str, admin: dict = Depends(require_admin)):
 @api_router.post("/upload")
 async def upload_image(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
     ext = file.filename.split(".")[-1].lower() if "." in file.filename else "bin"
-    path = f"{APP_NAME}/products/{uuid.uuid4()}.{ext}"
-    data = await file.read()
     content_type = MIME_TYPES.get(ext, file.content_type or "application/octet-stream")
-    result = put_object(path, data, content_type)
-    await db.files.insert_one({
-        "storage_path": result["path"],
-        "content_type": content_type,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    backend = os.environ.get("FRONTEND_URL", "")
-    return {"url": f"/api/files/{result['path']}"}
-
-
-@api_router.get("/files/{path:path}")
-async def download(path: str):
-    record = await db.files.find_one({"storage_path": path})
-    try:
-        data, content_type = get_object(path)
-    except requests.HTTPError:
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    return Response(content=data, media_type=(record or {}).get("content_type", content_type))
+    
+    # Subir a Cloudinary
+    result = cloudinary.uploader.upload(
+        file.file,
+        folder="inflow/products",
+        resource_type="image",
+        format=ext,
+    )
+    
+    return {"url": result["secure_url"]}
 
 
 # ---------------- Wallet ----------------
@@ -605,10 +557,10 @@ async def startup():
     )
     social_seed = [
         {"name": "1.000 Seguidores Instagram", "category": "Instagram", "price": 12.0, "description": "Seguidores reales y activos para tu perfil de Instagram.", "image_url": "https://images.unsplash.com/photo-1666408738188-212c470d08b0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwyfHxpbnN0YWdyYW0lMjBmb2xsb3dlcnMlMjBzb2NpYWwlMjBtZWRpYSUyMG5lb258ZW58MHx8fHwxNzg4NjExNTAwfDA&ixlib=rb-4.1.0&q=85"},
-        {"name": "500 Likes Instagram", "category": "Instagram", "price": 5.0, "description": "Impulsa tus publicaciones con likes instantáneos.", "image_url": "https://images.unsplash.com/photo-1554177255-61502b352de3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwxfHxpbnN0YWdyYW0lMjBmb2xsb3dlcnMlMjBzb2NpYWwlMjBtZWRpYSUyMG5lb258ZW58MHx8fHwxNzg4NjExNTAwfDA&ixlib=rb-4.1.0&q=85"},
-        {"name": "5.000 Seguidores TikTok", "category": "TikTok", "price": 29.0, "description": "Haz crecer tu cuenta de TikTok y llega al FYP.", "image_url": "https://images.unsplash.com/photo-1532134358497-43fa3c6a02b0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHx0aWt0b2slMjB5b3V0dWJlJTIwY29udGVudCUyMGNyZWF0b3IlMjBuZW9ufGVufDB8fHx8MTc4ODYxMTUwMHww&ixlib=rb-4.1.0&q=85"},
-        {"name": "10.000 Views TikTok", "category": "TikTok", "price": 8.0, "description": "Multiplica las reproducciones de tus videos.", "image_url": "https://images.unsplash.com/photo-1567845735143-5e5d9d3f8f81?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwzfHxpbnN0YWdyYW0lMjBmb2xsb3dlcnMlMjBzb2NpYWwlMjBtZWRpYSUyMG5lb258ZW58MHx8fHwxNzg4NjExNTAwfDA&ixlib=rb-4.1.0&q=85"},
-        {"name": "1.000 Suscriptores YouTube", "category": "YouTube", "price": 45.0, "description": "Suscriptores para monetizar tu canal más rápido.", "image_url": "https://images.unsplash.com/photo-1560615253-8b8d1ea96363?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwzfHx0aWt0b2slMjB5b3V0dWJlJTIwY29udGVudCUyMGNyZWF0b3IlMjBuZW9ufGVufDB8fHx8MTc4ODYxMTUwMHww&ixlib=rb-4.1.0&q=85"},
+        {"name": "500 Likes Instagram", "category": "Instagram", "price": 5.0, "description": "Impulsa tus publicaciones con likes instantáneos.", "image_url": "https://images.unsplash.com/photo-1554177255-61502b352de3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwxfHxpbnN0YWdyYW0lMjBmb2xsb3dlcnMlMjBzb2NpYWwlMjBtZWRpYSUyMG5lb258ZW58MHx8fHx8MTc4ODYxMTUwMHww&ixlib=rb-4.1.0&q=85"},
+        {"name": "5.000 Seguidores TikTok", "category": "TikTok", "price": 29.0, "description": "Haz crecer tu cuenta de TikTok y llega al FYP.", "image_url": "https://images.unsplash.com/photo-1532134358497-43fa3c6a02b0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHx0aWt0b2slMjB5b3V0dWJlJTIwY29udGVudCUyMGNyZWF0b3IlMjBuZW9ufGVufDB8fHx8fDE3ODg2MTE1MDB8MA&ixlib=rb-4.1.0&q=85"},
+        {"name": "10.000 Views TikTok", "category": "TikTok", "price": 8.0, "description": "Multiplica las reproducciones de tus videos.", "image_url": "https://images.unsplash.com/photo-1567845735143-5e5d9d3f8f81?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwzfHxpbnN0YWdyYW0lMjBmb2xsb3dlcnMlMjBzb2NpYWwlMjBtZWRpYSUyMG5lb258ZW58MHx8fHx8MTc4ODYxMTUwMHww&ixlib=rb-4.1.0&q=85"},
+        {"name": "1.000 Suscriptores YouTube", "category": "YouTube", "price": 45.0, "description": "Suscriptores para monetizar tu canal más rápido.", "image_url": "https://images.unsplash.com/photo-1560615253-8b8d1ea96363?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwzfHx0aWt0b2slMjB5b3V0dWJlJTIwY29udGVudCUyMGNyZWF0b3IlMjBuZW9ufGVufDB8fHx8fDE3ODg2MTE1MDB8MA&ixlib=rb-4.1.0&q=85"},
         {"name": "Pack Growth Pro", "category": "Combos", "price": 99.0, "description": "Combo todo en uno: seguidores, likes y views en todas tus redes.", "image_url": "https://images.unsplash.com/photo-1522125670776-3c7abb882bc2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwzfHx3b21hbiUyMHVzaW5nJTIwcGhvbmUlMjBzb2NpYWwlMjBtZWRpYXxlbnwwfHx8fDE3ODg2MTI0MDh8MA&ixlib=rb-4.1.0&q=85"},
     ]
     for s in social_seed:
@@ -631,11 +583,6 @@ async def startup():
             {"code": "BIENVENIDA10", "percent": 10.0, "scope": "topup", "active": True,
              "created_at": datetime.now(timezone.utc).isoformat()},
         ])
-    try:
-        init_storage()
-        logger.info("Storage initialized")
-    except Exception as e:
-        logger.error(f"Storage init failed: {e}")
 
 
 @app.on_event("shutdown")

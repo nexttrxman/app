@@ -363,6 +363,18 @@ async def purchase(product_id: str, data: Optional[PurchaseInput] = None, user: 
     
     # Si viene con datos de pack, calcular precio dinámico
     if data and data.quantity and data.platform and data.service_type:
+        # Validar usuario destino
+        if not data.target_username or not data.target_username.strip():
+            raise HTTPException(status_code=400, detail="Ingresá el usuario de destino")
+        
+        if len(data.target_username.strip()) > 30:
+            raise HTTPException(status_code=400, detail="El usuario de destino es demasiado largo")
+        
+        # Validar cantidad
+        DISCOUNTS = {100: 15, 250: 22, 500: 30, 1000: 40, 1500: 48, 2000: 55, 2500: 60, 5000: 65}
+        if data.quantity not in DISCOUNTS:
+            raise HTTPException(status_code=400, detail="Cantidad de pack inválida")
+        
         # Precios base por plataforma y servicio (ARS por unidad)
         BASE_PRICES = {
             "instagram": {"seguidores": 29.6, "likes": 5.9, "views": 2.9, "reels": 8.9, "guardados": 12.9, "shares": 9.9},
@@ -370,11 +382,6 @@ async def purchase(product_id: str, data: Optional[PurchaseInput] = None, user: 
             "tiktok": {"seguidores": 25.0, "views": 2.5, "likes": 5.5, "shares": 8.5},
             "facebook": {"seguidores": 22.0, "likes": 5.0, "views": 2.0, "shares": 7.5},
             "spotify": {"seguidores": 35.0, "streams": 4.5, "saves": 10.0},
-        }
-        
-        # Descuentos por cantidad (igual que el frontend)
-        DISCOUNTS = {
-            100: 15, 250: 22, 500: 30, 1000: 40, 1500: 48, 2000: 55, 2500: 60, 5000: 65,
         }
         
         platform_lower = data.platform.lower()
@@ -466,36 +473,6 @@ async def purchase(product_id: str, data: Optional[PurchaseInput] = None, user: 
         "platform": data.platform if data else None,
         "service_type": data.service_type if data else None,
         "target_username": data.target_username if data else None,
-    }
-
-    # referral commission for the inviter
-    referrer_id = current.get("referred_by")
-    commission = round(total * REFERRAL_COMMISSION_PERCENT / 100, 2) if referrer_id else 0.0
-    if referrer_id and commission > 0 and ObjectId.is_valid(referrer_id) and referrer_id != user["_id"]:
-        await db.users.update_one({"_id": ObjectId(referrer_id)}, {"$inc": {"balance": commission}})
-        await db.transactions.insert_one({
-            "user_id": referrer_id,
-            "type": "referral",
-            "amount": commission,
-            "description": f"Comisión por referido: {current.get('name', '')}",
-            "created_at": now,
-        })
-        await db.referral_events.insert_one({
-            "referrer_id": referrer_id,
-            "referred_id": user["_id"],
-            "referred_name": current.get("name", ""),
-            "type": "commission",
-            "amount": commission,
-            "created_at": now,
-        })
-
-    updated = await db.users.find_one({"_id": uid})
-    return {
-        "balance": round(updated["balance"], 2),
-        "product": product["name"],
-        "price": price,
-        "discount": discount,
-        "total": total,
     }
 
 

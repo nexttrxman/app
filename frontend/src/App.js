@@ -10,6 +10,7 @@ import Account from "@/pages/Account";
 import TopUp from "@/pages/TopUp";
 import Admin from "@/pages/Admin";
 import Referrals from "@/pages/Referrals";
+import SliderDemo from "@/pages/SliderDemo";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/cargar-saldo" element={<TopUp />} />
             <Route path="/referidos" element={<Referrals />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/slider-demo" element={<SliderDemo />} />
           </Routes>
           <Footer />
         </BrowserRouter>

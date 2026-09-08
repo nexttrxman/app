@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { resolveImage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { ShoppingCart, Loader2 } from "lucide-react";
 
 const CAT_COLOR = {
@@ -12,12 +13,15 @@ const CAT_COLOR = {
 
 export default function ProductCard({ product, onBuy, index = 0 }) {
   const [busy, setBusy] = useState(false);
+  const [quantity, setQuantity] = useState([1]);
   const accent = CAT_COLOR[product.category] || "#9b5cff";
+
+  const totalPrice = (product.price * quantity[0]).toFixed(2);
 
   const handle = async () => {
     setBusy(true);
     try {
-      await onBuy(product);
+      await onBuy(product, quantity[0]);
     } finally {
       setBusy(false);
     }
@@ -51,12 +55,38 @@ export default function ProductCard({ product, onBuy, index = 0 }) {
         <h3 className="font-display text-base font-bold text-white leading-snug">{product.name}</h3>
         <p className="text-sm text-[#a49cbd] mt-2.5 line-clamp-2 flex-1 leading-relaxed">{product.description}</p>
 
-        <div className="flex items-end justify-between mt-6 gap-3">
+        {/* Slider para cantidad */}
+        <div className="mt-6 bg-secondary/40 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-xs font-semibold uppercase tracking-wider text-[#6f6690]">
+              Cantidad
+            </label>
+            <span className="text-sm font-bold text-cyan">{quantity[0]}x</span>
+          </div>
+          <Slider
+            className="slider-neon"
+            value={quantity}
+            onValueChange={setQuantity}
+            min={1}
+            max={100}
+            step={1}
+          />
+        </div>
+
+        {/* Precio total */}
+        <div className="mt-4 flex items-end justify-between gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.24em] text-[#6f6690] font-semibold">Precio</div>
-            <div className="font-display text-2xl font-extrabold text-white mt-1" data-testid={`product-price-${product.id}`}>
-              ${product.price.toFixed(2)}
+            <div className="text-[10px] uppercase tracking-[0.24em] text-[#6f6690] font-semibold">
+              {quantity[0] > 1 ? "Total" : "Precio"}
             </div>
+            <div className="font-display text-2xl font-extrabold text-white mt-1" data-testid={`product-price-${product.id}`}>
+              ${totalPrice}
+            </div>
+            {quantity[0] > 1 && (
+              <div className="text-[10px] text-[#a49cbd] mt-1">
+                ${product.price.toFixed(2)} × {quantity[0]}
+              </div>
+            )}
           </div>
           <Button
             data-testid={`buy-btn-${product.id}`}

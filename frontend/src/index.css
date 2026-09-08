@@ -73,7 +73,7 @@ h1, h2, h3, h4, .font-display { font-family: 'Unbounded', sans-serif; }
   inset: 0;
   pointer-events: none;
   opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOcta[...]
 }
 
 .aurora-fuchsia { background: radial-gradient(48% 42% at 18% 22%, rgba(255, 61, 190, 0.30), transparent 70%); }
@@ -121,3 +121,45 @@ h1, h2, h3, h4, .font-display { font-family: 'Unbounded', sans-serif; }
 
 @keyframes tickerUp { from { transform: translateY(6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .ticker-up { animation: tickerUp 0.45s ease forwards; }
+
+/* ---------- SLIDER NEÓN ---------- */
+.slider-neon [role="slider"] {
+  box-shadow: 0 0 12px rgba(255, 61, 190, 0.6), inset 0 0 8px rgba(255, 61, 190, 0.3);
+  background: radial-gradient(circle, #ff3dbe 0%, #c62d9a 100%);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  border: 2px solid rgba(255, 61, 190, 0.8);
+}
+
+.slider-neon [role="slider"]:hover {
+  box-shadow: 0 0 20px rgba(255, 61, 190, 0.9), 
+              0 0 40px rgba(46, 230, 255, 0.4),
+              inset 0 0 12px rgba(255, 61, 190, 0.5);
+  transform: scale(1.15);
+}
+
+.slider-neon [role="slider"]:focus-visible {
+  box-shadow: 0 0 28px rgba(255, 61, 190, 1), 
+              0 0 50px rgba(46, 230, 255, 0.6),
+              inset 0 0 16px rgba(255, 61, 190, 0.7);
+}
+
+.slider-neon [role="progressbar"] {
+  background: linear-gradient(90deg, #ff3dbe 0%, #2ee6ff 100%);
+  box-shadow: 0 0 16px rgba(255, 61, 190, 0.5), 
+              0 0 32px rgba(46, 230, 255, 0.3);
+}
+
+/* Track del slider - más oscuro y con borde neón sutil */
+.slider-neon [role="slider"] + [role="progressbar"] {
+  box-shadow: inset 0 2px 8px rgba(255, 61, 190, 0.15);
+}
+
+/* Animación de pulso cuando está activo */
+@keyframes sliderPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 61, 190, 0.6), inset 0 0 8px rgba(255, 61, 190, 0.3); }
+  50% { box-shadow: 0 0 24px rgba(255, 61, 190, 0.8), inset 0 0 12px rgba(255, 61, 190, 0.5); }
+}
+
+.slider-neon [role="slider"]:active {
+  animation: sliderPulse 0.5s ease-in-out;
+}
